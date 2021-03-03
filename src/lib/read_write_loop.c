@@ -24,14 +24,14 @@ void read_write_loop(const int sfd) {
     while (1) {
         poll(pfd, 2 , -1);
         if (pfd[0].revents & POLLIN) {
-            //read(stdin) -> write(socket)
+            // read(stdin) -> write(socket)
             nb=read(0, buf, 1024);
             if (nb==0) return;
             err=write(sfd, buf, nb);
             if (err<0) return;
         }
         if (pfd[1].revents & POLLIN) {
-            // read(stdin) -> write(socket)
+            // read(socket) -> write(stdout)
             nb=read(sfd, buf, 1024);
             err=write(1, buf, nb);
             if (err<0) return;
