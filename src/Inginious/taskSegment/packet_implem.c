@@ -38,67 +38,65 @@ pkt_status_code pkt_decode(const char *data, const size_t len, pkt_t *pkt)
     int length=0;
     if (type==PTYPE_DATA) {
         uint16_t *tmp16=(uint16_t *) (data+1);
-        length=*tmp16;
+        length=ntohs(*tmp16); // network -> local
     }
     int base=10; //bytes
-    if (type==PTYPE_DATA) base+=2; // champ length
+    int lengthHeader=6;
+
+    if (type==PTYPE_DATA) {
+        base+=2; // champ length
+        lengthHeader+=2;
+    }
     if (tr==0) {
         base+=length;
         if (length>0) base+=4; // crc2
     }
     if ((int) len<base) return E_NOMEM;
 
-
     // DECODE BEGINS
-    pkt->type=((*data)>>6); // on get le type
-    if (pkt->type==0) return E_TYPE; // packet invalide
-
-    pkt->tr=((*data)>>5) & 1; // on lit le 6eme bit
-    if (pkt->type!=PTYPE_DATA && pkt->tr!=0) return E_TR; // required ?
-
-    pkt->window=((*data)<<3)>>3; // lecture des 5 derniers bits
-
+    unsigned char crc1Support[lengthHeader];    
+   
+    memcpy(pkt, data+0, sizeof(uint8_t));
+    uint8_t prevTr=pkt->tr;
+    pkt_set_tr(pkt, 0); // pour crc1
+    memcpy(crc1Support, pkt, sizeof(uint8_t));
+    
     int inc=0; // decalage d'usage si champ longueur
     if (pkt->type==PTYPE_DATA) {
         inc=2;
-        uint16_t *tmp16=(uint16_t *) (data+1);
-        pkt->length=ntohs(*tmp16); // ?
+        uint16_t srcLength;
+        memcpy(&srcLength, data+1, sizeof(uint16_t));
+        pkt_set_length(pkt, ntohs(srcLength));
+        memcpy(crc1Support+1, &(pkt->length), sizeof(uint16_t));
     }
     else pkt->length=0;
 
-
-    pkt->seqnum=*(data+1+inc); // ok
-
-    uint32_t *tmp32=(uint32_t *) (data+2+inc);
-    pkt->timestamp=ntohl(*tmp32); // network byte-order -> host order
-
-    tmp32=(uint32_t *) (data+6+inc);
-    pkt->crc1=ntohl(*tmp32);
-
-    /*check du crc1*/
-    uint8_t *dataCrc=(uint8_t *) data; // warning sinon
-    uint32_t crc = crc32(0L, Z_NULL, 0);
-    int i;
-    for (i=0; i<=5+inc; i++) {
-        if (i==0) {
-            uint8_t  tmp8=(*dataCrc)-32;
-            crc = crc32(crc, &tmp8, 1);
-        } else crc = crc32(crc, dataCrc+i, 1);
-    }
-    if (crc!=pkt->crc1) return E_CRC;
-
-
+    memcpy(&(pkt->seqnum), data+1+inc, sizeof(uint8_t));
+    memcpy(crc1Support+1+inc, &(pkt->seqnum), sizeof(uint8_t));    
+    
+    memcpy(&(pkt->timestamp), data+2+inc, sizeof(uint32_t));
+    memcpy(crc1Support+2+inc, &(pkt->timestamp), sizeof(uint32_t));    
+    
+    uint32_t srcCrc1;
+    memcpy(&srcCrc1, data+6+inc, sizeof(uint32_t));
+    pkt_set_crc1(pkt, ntohl(srcCrc1));
+    memcpy(crc1Support+6+inc, &(pkt->crc1), sizeof(uint32_t));    
+    
+    uint32_t crc1 = crc32(0, crc1Support, sizeof(crc1Support));
+    if (crc1!=pkt_get_crc1(pkt)) return E_CRC;
+    pkt_set_tr(pkt, prevTr);
+    
     if (pkt->tr==0) {
         if (pkt->length>0) {
             memcpy(pkt->payload, data+10+inc, pkt->length);
-            tmp32=(uint32_t *)(data+10+inc+pkt->length);
-            pkt->crc2=ntohl(*tmp32);
-            crc = crc32(0L, Z_NULL, 0);
-            int j;
-            for (j=0; j<pkt->length; j++) {
-                crc = crc32(crc, dataCrc+j+10+inc, 1);
-            }
-            if (crc!=pkt->crc2) return E_CRC;
+            
+            uint32_t srcCrc2;
+            memcpy(&srcCrc2, data+10+inc+pkt->length, sizeof(uint32_t));
+            pkt_set_crc2(pkt, ntohl(srcCrc2 ));
+            
+            unsigned char *crc2Support=(unsigned char *) pkt->payload;
+            uint32_t crc2 = crc32(0, crc2Support, pkt->length);
+            if (crc2!=pkt_get_crc2(pkt)) return E_CRC;
         }
     }
 
@@ -117,16 +115,18 @@ pkt_status_code pkt_encode(const pkt_t* pkt, char *buf, size_t *len)
     if ((int) *len<base) return E_NOMEM;
 
 
-    *buf=(pkt->type << 6) | (pkt->tr << 5) | (pkt->window); // ok
+    *buf=(pkt->type << 6) | (pkt->tr << 5) | (pkt->window);
     int inc=0;
     if (pkt->type==PTYPE_DATA) {
-        memcpy(buf+1, &(pkt->length), 2);
+        uint16_t nlength=htons(pkt->length);        
+        memcpy(buf+1, &nlength, 2);
         inc=2;
     }
     *(buf+1+inc)=pkt->seqnum;
 
     memcpy(buf+2+inc, &(pkt->timestamp), 4);
-    memcpy(buf+6+inc, &(pkt->crc1), 4);
+    uint32_t nCrc1=htons(pkt->crc1);         
+    memcpy(buf+6+inc, &nCrc1, 4);
     if (pkt->tr!=0) {
         *len=10+inc;
         return PKT_OK;
@@ -136,8 +136,9 @@ pkt_status_code pkt_encode(const pkt_t* pkt, char *buf, size_t *len)
         *len=10+inc;
         return PKT_OK;
     }
-
-    memcpy(buf+10+inc+pkt->length, &(pkt->crc2), 4);
+    
+    uint32_t nCrc2=htons(pkt->crc2);         
+    memcpy(buf+10+inc+pkt->length, &nCrc2, 4);
     *len=16+pkt->length;
     return PKT_OK;
 }
@@ -179,7 +180,7 @@ uint32_t pkt_get_crc1   (const pkt_t* pkt)
 
 uint32_t pkt_get_crc2   (const pkt_t* pkt)
 {
-    if (pkt->tr!=0)return 0;
+    if (pkt->tr!=0) return 0;
     return pkt->crc2;
 }
 
@@ -201,6 +202,7 @@ pkt_status_code pkt_set_type(pkt_t *pkt, const ptypes_t type)
 pkt_status_code pkt_set_tr(pkt_t *pkt, const uint8_t tr)
 {
     if (pkt->type!=PTYPE_DATA && tr!=0) return E_TR;
+    if (pkt->tr>1) return E_TR;
     pkt->tr=tr;
     return PKT_OK;
 }
@@ -248,14 +250,15 @@ pkt_status_code pkt_set_payload(pkt_t *pkt,
                                 const char *data,
                                 const uint16_t length)
 {
+    if (length>512) return E_LENGTH;
     memcpy(pkt->payload, data, length);
-    pkt->length=length;
+    pkt_set_length(pkt, length);
     return PKT_OK;
 }
 
 ssize_t predict_header_length(const pkt_t *pkt)
 {
-    if (pkt->type!=PTYPE_DATA) return 0;
     return pkt->length;
 }
+
 
