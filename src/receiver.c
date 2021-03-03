@@ -4,10 +4,36 @@
 #include <stdint.h>
 
 #include "log.h"
+#include "./Inginious/sendData/real_address.h"
+#include "./Inginious/sendData/create_socket.h"
+#include "./Inginious/sendData/wait_for_client.h"
+#include "./Inginious/sendData/read_write_loop_server.h"
 
 int print_usage(char *prog_name) {
     ERROR("Usage:\n\t%s [-s stats_filename] listen_ip listen_port", prog_name);
     return EXIT_FAILURE;
+}
+
+int connection_to_sender(char* listen_ip, uint16_t listen_port) {
+    struct sockaddr_in6 addressSock;
+
+    const char *err = real_address(listen_ip, &addressSock);
+    if (err!=NULL) {
+        fprintf(stderr, "Adress unrecognized, error message : %s\n", err);
+        return 1;
+    }
+
+    int sock = create_socket(&addressSock, listen_port, NULL, -1);
+    if (sock < 0) {
+        fprintf(stderr, "Error during the execution of create_socket()");
+        return 1;
+    }
+
+    if (wait_for_client(sock)==-1) {
+        fprintf(stderr, "Error during the execution of wait_for_client()");
+    };
+
+    return 0;
 }
 
 
@@ -54,5 +80,13 @@ int main(int argc, char **argv) {
     ERROR("This is not an error, %s", "now let's code!");
 
     // Now let's code!
+    if (connection_to_sender(listen_ip, listen_port)!=0) {
+        fprintf(stdout, "Error during the execution of connection_to_sender");
+        return EXIT_FAILURE;
+    }
+
+
+
+
     return EXIT_SUCCESS;
 }
