@@ -14,7 +14,7 @@
 #include "lib/create_socket.h"
 #include "lib/read_write_loop_sender.h"
 #include "lib/real_address.h"
-#include "lib/wait_for_client.h"
+// #include "lib/wait_for_client.h"
 
 
 int print_usage(char *prog_name) {
@@ -88,7 +88,7 @@ int main(int argc, char **argv) {
         return EXIT_FAILURE;
     }
 
-    int sfd = create_socket();
+    int sfd = create_socket(NULL, -1, &receiver_addr, receiver_port);
     if (sfd < 0) {
         ERROR("Error while creating socket\n");
         return EXIT_FAILURE;
