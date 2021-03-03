@@ -70,7 +70,7 @@ int main(int argc, char **argv) {
     int infile_fd;
     if (filename == NULL || strcmp(filename, "stdin")) {
         if (filename == NULL) printf("Not filename found => set as STDIN\n");
-        infile_fd = fileno(stdin);
+        infile_fd = 0;
     } else {
         infile_fd = open(filename, O_RDONLY);
         if (infile_fd < -1){
@@ -100,6 +100,7 @@ int main(int argc, char **argv) {
     }
     int cond = 1;
     printf("ln0=0\n");
+    printf("infile fd : %d\n", infile_fd);
     read_write_loop_sender(sfd, infile_fd);
 
     // Close()

@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include "read_write_loop_server.h"
 
-void read_write_loop(const int sfd, const int outfd) {
+void read_write_loop_server(const int sfd, const int outfd) {
 
     struct pollfd sfdPoll;
     sfdPoll.fd=sfd;

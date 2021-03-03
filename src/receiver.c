@@ -9,6 +9,8 @@
 #include "./Inginious/sendData/wait_for_client.h"
 #include "./Inginious/sendData/read_write_loop_server.h"
 
+int sock;
+
 int print_usage(char *prog_name) {
     ERROR("Usage:\n\t%s [-s stats_filename] listen_ip listen_port", prog_name);
     return EXIT_FAILURE;
@@ -23,7 +25,7 @@ int connection_to_sender(char* listen_ip, uint16_t listen_port) {
         return 1;
     }
 
-    int sock = create_socket(&addressSock, listen_port, NULL, -1);
+    sock = create_socket(&addressSock, listen_port, NULL, -1);
     if (sock < 0) {
         fprintf(stderr, "Error during the execution of create_socket()");
         return 1;
@@ -31,7 +33,8 @@ int connection_to_sender(char* listen_ip, uint16_t listen_port) {
 
     if (wait_for_client(sock)==-1) {
         fprintf(stderr, "Error during the execution of wait_for_client()");
-    };
+        return 1;
+    }
 
     return 0;
 }
@@ -84,9 +87,8 @@ int main(int argc, char **argv) {
         fprintf(stdout, "Error during the execution of connection_to_sender");
         return EXIT_FAILURE;
     }
-
-
-
+    printf("first\n");
+    read_write_loop_server(sock, 2);
 
     return EXIT_SUCCESS;
 }
