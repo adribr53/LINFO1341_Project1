@@ -34,6 +34,7 @@ pkt_status_code pkt_decode(const char *data, const size_t len, pkt_t *pkt)
 {
     // CHECK SIZE
     int type=(*data)>>6;
+    //printf("type %d\n", type);
     int tr=((*data)>>5) & 1;
     int length=0;
     if (type==PTYPE_DATA) {
@@ -54,52 +55,53 @@ pkt_status_code pkt_decode(const char *data, const size_t len, pkt_t *pkt)
     if ((int) len<base) return E_NOMEM;
 
     // DECODE BEGINS
-    unsigned char crc1Support[lengthHeader];    
-   
-    memcpy(pkt, data+0, sizeof(uint8_t));
-    uint8_t prevTr=pkt->tr;
+
+    pkt->type=(*data)>>6; // ok
+    pkt->tr=((*data)>>5) & 1; // ok
+    pkt->window=((*data)<<3)>>3; // ok
+    uint8_t prevTr=pkt->tr; // ok
     pkt_set_tr(pkt, 0); // pour crc1
-    memcpy(crc1Support, pkt, sizeof(uint8_t));
-    
+
     int inc=0; // decalage d'usage si champ longueur
     if (pkt->type==PTYPE_DATA) {
         inc=2;
         uint16_t srcLength;
         memcpy(&srcLength, data+1, sizeof(uint16_t));
         pkt_set_length(pkt, ntohs(srcLength));
-        memcpy(crc1Support+1, &(pkt->length), sizeof(uint16_t));
+
     }
     else pkt->length=0;
 
     memcpy(&(pkt->seqnum), data+1+inc, sizeof(uint8_t));
-    memcpy(crc1Support+1+inc, &(pkt->seqnum), sizeof(uint8_t));    
-    
+
     memcpy(&(pkt->timestamp), data+2+inc, sizeof(uint32_t));
-    memcpy(crc1Support+2+inc, &(pkt->timestamp), sizeof(uint32_t));    
+
     
     uint32_t srcCrc1;
     memcpy(&srcCrc1, data+6+inc, sizeof(uint32_t));
     pkt_set_crc1(pkt, ntohl(srcCrc1));
-    memcpy(crc1Support+6+inc, &(pkt->crc1), sizeof(uint32_t));    
-    
-    uint32_t crc1 = crc32(0, crc1Support, sizeof(crc1Support));
+
+    unsigned char header[lengthHeader];
+    memcpy(header, data, lengthHeader);
+    if (prevTr==1) header[0]-=32;
+    uint32_t crc1= (uint32_t) crc32(0L, Z_NULL, 0);
+    crc1 = crc32(crc1, header, lengthHeader);
+
     if (crc1!=pkt_get_crc1(pkt)) return E_CRC;
-    pkt_set_tr(pkt, prevTr);
-    
+
     if (pkt->tr==0) {
         if (pkt->length>0) {
             memcpy(pkt->payload, data+10+inc, pkt->length);
             
             uint32_t srcCrc2;
             memcpy(&srcCrc2, data+10+inc+pkt->length, sizeof(uint32_t));
-            pkt_set_crc2(pkt, ntohl(srcCrc2 ));
+            pkt_set_crc2(pkt, ntohl(srcCrc2));
             
             unsigned char *crc2Support=(unsigned char *) pkt->payload;
-            uint32_t crc2 = crc32(0, crc2Support, pkt->length);
-            if (crc2!=pkt_get_crc2(pkt)) return E_CRC;
+            uint32_t crc2= (uint32_t) crc32(0L, Z_NULL, 0);
+            crc2 = crc32(crc2, crc2Support, pkt->length);
         }
     }
-
     return PKT_OK;
 }
 
@@ -121,11 +123,13 @@ pkt_status_code pkt_encode(const pkt_t* pkt, char *buf, size_t *len)
         uint16_t nlength=htons(pkt->length);        
         memcpy(buf+1, &nlength, 2);
         inc=2;
+        printf("%x\n", *(buf+1));
+        printf("%x\n", *(buf+2));
     }
     *(buf+1+inc)=pkt->seqnum;
-
     memcpy(buf+2+inc, &(pkt->timestamp), 4);
-    uint32_t nCrc1=htons(pkt->crc1);         
+    uint32_t nCrc1=htonl(pkt->crc1); // hum
+
     memcpy(buf+6+inc, &nCrc1, 4);
     if (pkt->tr!=0) {
         *len=10+inc;
@@ -137,7 +141,7 @@ pkt_status_code pkt_encode(const pkt_t* pkt, char *buf, size_t *len)
         return PKT_OK;
     }
     
-    uint32_t nCrc2=htons(pkt->crc2);         
+    uint32_t nCrc2=htonl(pkt->crc2);
     memcpy(buf+10+inc+pkt->length, &nCrc2, 4);
     *len=16+pkt->length;
     return PKT_OK;
@@ -261,4 +265,31 @@ ssize_t predict_header_length(const pkt_t *pkt)
     return pkt->length;
 }
 
+
+/*int main() {
+    char content[]= {0x5c, 0x00, 0x0b, 0x7b, 0x17, 0x00, 0x00, 0x00, 0x4e, 0xa0, 0x77, 0xdb, 0x68, 0x65, 0x6c, 0x6c,
+                     0x6f, 0x20, 0x77, 0x6f, 0x72, 0x6c, 0x64, 0x0d, 0x4a, 0x11, 0x85};
+    char next[27]={0};
+      5c ->first 00 0b->length 7b ->seq  17 00 00 00->timestamp(pas converti en local) 4e a0 77 db->crc1 68 65 6c 6c
+     * 6f 20 77 6f 72 6c 64 0d 4a 11 85
+
+    //printf("%x\n", content[0]);
+    //pkt_status_code pkt_decode(const char *data, const size_t len, pkt_t *pkt);
+    pkt_t *test=pkt_new();
+    pkt_decode(content, 27, test);
+    printf("wtf\n");
+    unsigned int *len = malloc(sizeof(unsigned int));
+    printf("wtf\n");
+
+    *len=27;
+    printf("I am here\n");
+    printf("%d\n", pkt_encode(test, next, (size_t *) len));
+    printf("hé\n");
+    for (int i=0; i<27; i++) {
+        printf("it %d\n", i);
+        printf("init %x\n", content[i]);
+        printf("final %x\n", content[i]);
+        printf("\n");
+    }
+}*/
 
