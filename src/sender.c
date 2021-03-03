@@ -11,11 +11,9 @@
 
 
 #include "log.h"
-#include "lib/create_socket.h"
-#include "lib/read_write_loop_sender.h"
-#include "lib/real_address.h"
-// #include "lib/wait_for_client.h"
-
+#include "Inginious/sendData/create_socket.h"
+#include "Inginious/sendData/read_write_loop_sender.h"
+#include "Inginious/sendData/real_address.h"
 
 int print_usage(char *prog_name) {
     ERROR("Usage:\n\t%s [-f filename] [-s stats_filename] receiver_ip receiver_port", prog_name);
@@ -87,6 +85,7 @@ int main(int argc, char **argv) {
         ERROR("Error with the address");
         return EXIT_FAILURE;
     }
+    printf("ln0=0\n");
 
     int sfd = create_socket(NULL, -1, &receiver_addr, receiver_port);
     if (sfd < 0) {
@@ -94,7 +93,7 @@ int main(int argc, char **argv) {
         return EXIT_FAILURE;
     }
     int cond = 1;
-
+    printf("ln0=0\n");
     read_write_loop_sender(sfd, infile_fd);
 
     // Close()
