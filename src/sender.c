@@ -2,14 +2,25 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <stdint.h>
+#include <sys/types.h>          /* See NOTES */
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <string.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+
 
 #include "log.h"
+#include "lib/create_socket.h"
+#include "lib/read_write_loop_sender.h"
+#include "lib/real_address.h"
+#include "lib/wait_for_client.h"
+
 
 int print_usage(char *prog_name) {
     ERROR("Usage:\n\t%s [-f filename] [-s stats_filename] receiver_ip receiver_port", prog_name);
     return EXIT_FAILURE;
 }
-
 
 int main(int argc, char **argv) {
     int opt;
@@ -54,9 +65,39 @@ int main(int argc, char **argv) {
     ERROR("Sender has following arguments: filename is %s, stats_filename is %s, receiver_ip is %s, receiver_port is %u",
         filename, stats_filename, receiver_ip, receiver_port);
 
+    int infile_fd;
+    if (strcmp(filename, "stdin")) {
+        infile_fd = fileno(stdin);
+    } else {
+        infile_fd = open(filename, O_RDONLY);
+        if (infile_fd < -1){
+            ERROR("Error on reading input");
+            return EXIT_FAILURE;
+        }
+    }
+
     DEBUG("You can only see me if %s", "you built me using `make debug`");
     ERROR("This is not an error, %s", "now let's code!");
 
     // Now let's code!
+
+    // Socket() & Connect()
+    struct sockaddr_in6 receiver_addr;
+    if (real_address(receiver_ip, &receiver_addr) != NULL) {
+        ERROR("Error with the address");
+        return EXIT_FAILURE;
+    }
+
+    int sfd = create_socket();
+    if (sfd < 0) {
+        ERROR("Error while creating socket\n");
+        return EXIT_FAILURE;
+    }
+    int cond = 1;
+
+    read_write_loop_sender(sfd, infile_fd);
+
+    // Close()
+
     return EXIT_SUCCESS;
 }
