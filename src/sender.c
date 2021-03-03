@@ -21,6 +21,7 @@ int print_usage(char *prog_name) {
 }
 
 int main(int argc, char **argv) {
+    printf("COUCOU\n");
     int opt;
 
     char *filename = NULL;
@@ -43,6 +44,8 @@ int main(int argc, char **argv) {
             return print_usage(argv[0]);
         }
     }
+    printf("COUCOU\n");
+
 
     if (optind + 2 != argc) {
         ERROR("Unexpected number of positional arguments");
@@ -62,9 +65,11 @@ int main(int argc, char **argv) {
     // This is not an error per-se.
     ERROR("Sender has following arguments: filename is %s, stats_filename is %s, receiver_ip is %s, receiver_port is %u",
         filename, stats_filename, receiver_ip, receiver_port);
+    printf("COUCOU\n");
 
     int infile_fd;
-    if (strcmp(filename, "stdin")) {
+    if (filename == NULL || strcmp(filename, "stdin")) {
+        if (filename == NULL) printf("Not filename found => set as STDIN\n");
         infile_fd = fileno(stdin);
     } else {
         infile_fd = open(filename, O_RDONLY);
@@ -73,6 +78,7 @@ int main(int argc, char **argv) {
             return EXIT_FAILURE;
         }
     }
+    printf("COUCOU\n");
 
     DEBUG("You can only see me if %s", "you built me using `make debug`");
     ERROR("This is not an error, %s", "now let's code!");
