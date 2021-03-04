@@ -51,13 +51,13 @@ void read_write_loop_sender(const int sfd, const int input_fd) {
 
     struct pkt socketPkt;
     int socketResp;
-    int receive_seqnum;
+    uint8_t receive_seqnum;
     // int waitForAck = FALSE;
     while (1) {
         poll(pfd, 2 , TIMEOUT);
         if (pfd[1].revents & POLLIN) {
             // read(stdin) -> write(socket)
-            if (pktInWindow < sendingWindow) {
+            if (pktInWindow < sendingWindowSize) {
                 nb=read(input_fd, buf, 512);
                 if (nb==0) return; // all data has been sent
                 endWindow = (endWindow+1)%31;
@@ -122,7 +122,7 @@ void read_write_loop_sender(const int sfd, const int input_fd) {
                 err=write(sfd, buf, pkt_get_length(&sendingWindow[i])); // Send the packet back
                 if (err < 0) return;
             }
-            i = (i + 1) % 31
+            i = (i + 1) % 31;
         }
     }
 }
