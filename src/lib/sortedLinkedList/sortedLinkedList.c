@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "../segment/packet_interface.h"
-#include "sortedLinkedList.h."
+#include "sortedLinkedList.h"
 /*
  * @pre : -
  *        
@@ -31,15 +31,15 @@ list_t *new_list() {
 }*/
 
 /* cmp de seqnum */
-int cmp(pkt *p1, pkt *p2) { // p1 > p2 => true
-    int s1=pkt_get_seqnum(p1);
-    int s2=pkt_get_seqnum(p2);
+int cmp(pkt_t *p1, pkt_t *p2) { // p1 > p2 => true
+    uint8_t s1=pkt_get_seqnum(p1);
+    uint8_t s2=pkt_get_seqnum(p2);
     if (s1<s2 && s2-s1>100) return 1; // s1.................s2
     if (s1>=s2 && s1-s2>100) return 0; // s2................s1
     return s1>s2; // s2...s1 ou s1....s2
 }
 
-int pkt_equal(pkt* p1, pkt* p2) {
+int pkt_equal(pkt_t* p1, pkt_t* p2) {
     return pkt_get_seqnum(p1) == pkt_get_seqnum(p2);
 }
 /*
@@ -51,21 +51,21 @@ int pkt_equal(pkt* p1, pkt* p2) {
  *         the size is increased
  * Rem :   (if malloc fails, return -1 and does nothing else)
  */
-int add(list_t *list, pkt_t packet) {
+int add(list_t *list, pkt_t *packet) {
     node_t *newNode = malloc(sizeof(node_t));
-    newNode->pkt_t = &packet;
+    newNode->packet_t = packet;
     if (list->first_t == NULL) {
         list->first_t = newNode;
     } else {
         node_t *curr = list->first_t;
-        if (cmp(curr->packet_t , packet)) {
+        if (cmp(curr->packet_t , packet)) { // first après packet -> packet devient first
             newNode->next_t=curr;
             list->first_t = newNode;
         } else {
             while (curr->next_t != NULL && cmp(packet, curr->next_t->packet_t)) {
                 curr = curr->next_t;
             }
-            if (pkt_equal(&packet, curr->packet_t)) return -1;
+            if (pkt_equal(packet, curr->packet_t)) return -1;
             newNode->next_t = curr->next_t;
             curr->next_t = newNode;
         }
@@ -79,8 +79,8 @@ int add(list_t *list, pkt_t packet) {
  *
  * @post : return the first elem
  */
-pkt* peek(list_t* list) {
-    return list->first_t;
+pkt_t* peek(list_t* list) {
+    return list->first_t->packet_t;
 }
 
 /*
@@ -88,8 +88,8 @@ pkt* peek(list_t* list) {
  *        
  * @post : return the first elem and delete it if it exist
  */
-struct pkt* pop(list_t *list) {
-    pkt* resp = peek(list);
+pkt_t* pop(list_t *list) {
+    pkt_t* resp = peek(list);
     if (resp != NULL)
         list->first_t = list->first_t->next_t;
     return resp;
@@ -104,7 +104,7 @@ struct pkt* pop(list_t *list) {
  *        
  */
 int is_empty(list_t *list) {
-    return list->first == NULL;
+    return list->first_t == NULL;
 }
 
 

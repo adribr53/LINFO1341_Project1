@@ -124,12 +124,10 @@ pkt_status_code pkt_encode(const pkt_t* pkt, char *buf, size_t *len)
         uint16_t nlength=htons(pkt->length);        
         memcpy(buf+1, &nlength, 2);
         inc=2;
-        printf("%x\n", *(buf+1));
-        printf("%x\n", *(buf+2));
     }
     *(buf+1+inc)=pkt->seqnum;
     memcpy(buf+2+inc, &(pkt->timestamp), 4);
-    uint32_t nCrc1=htonl(pkt->crc1); // hum
+    uint32_t nCrc1=htonl(pkt->crc1); 
 
     memcpy(buf+6+inc, &nCrc1, 4);
     if (pkt->tr!=0) {
@@ -242,7 +240,9 @@ pkt_status_code pkt_set_timestamp(pkt_t *pkt, const uint32_t timestamp)
 uint32_t pkt_comp_crc1(pkt_t *pkt) {
     // TO DO : fabriquer le header
     unsigned char header[predict_header_length(pkt)];
-    memcpy(header, src, predict_header_length(pkt));
+    header[0]=(pkt->type << 6) | (pkt->window);
+    
+    //memcpy(header, src, predict_header_length(pkt));
     if (pkt_get_tr()==1) header[0]-=32;
     uint32_t crc1Comp= (uint32_t) crc32(0L, Z_NULL, 0);
     crc1Comp = crc32(crc1, header, lengthHeader);
@@ -315,3 +315,22 @@ int main() {
     printf("ptn\n");
 }*/
 
+int main() {
+    pkt_t pktAck=pkt_new();
+    pkt_set_window(pktAck, 31);
+    pkt_set_seqnum(78); // i sert d'ack pour tous les paquets envoyés
+    pkt_set_timestamp(pktAck, 15);
+    pkt_set_payload("abcdefghijklmnopkrstuvwxyzmtnjeconnaismon"); //42+16=57
+    pkt_set_crc1(pkt, pkt_comp_crc1(pktAck));
+    pkt_set_crc2(pkt, pkt_comp_crc2(pktAck));
+
+    unsigned int *len = malloc(sizeof(unsigned int));
+    *len=57;
+    char next[57]={0};
+    char *res=pkt_encode(&pktAck, next, (size_t *) len);
+    pkt_t test=pkt_new();
+    pkt_decode(res, 57, &test);
+    printf("compare the packets : \n");
+    printf("%d\n", pkt_get_length(test));
+
+}

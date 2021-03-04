@@ -6,8 +6,8 @@
 #include "../segment/packet_interface.h"
 #include <sys/socket.h>
 #include "../sortedLinkedList/sortedLinkedList.h"
+
 uint8_t curSeqnum=0;
- // remplacer par structure qu'on trie en fonction du seqnum
 list_t window;
 
 void treatment_pkt(char *msg, unsigned int length, const int sfd, const int outfd) {
@@ -33,11 +33,15 @@ void treatment_pkt(char *msg, unsigned int length, const int sfd, const int outf
     } else if (pkt_get_seqnum(pkt)==curSeqnum) {
         // envoi du paquet recu et de ceux qui seraient dans le buffer
         write(outfd, pkt_get_payload(pkt), pkt_get_length(pkt));
-        remove(window, curSeqnum);
+        pkt=peek(window);
+        if (pkt!=NULL && pkt_get_seqnum(pkt)==curSeqnum) {
+            pop(window);
+        }
+
         do {
             int i=(curSeqnum+1)%256;
-            pkt=remove(window, i);
-            if (pkt!=NULL) write(outfd, pkt_get_payload(pkt), pkt_get_length(pkt));
+            pkt=peek(window);
+            if (pkt!=NULL && pkt_get_seqnum(pkt)==i) write(outfd, pkt_get_payload(pkt), pkt_get_length(pkt));
             else break;
         } while (1)
 
