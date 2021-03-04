@@ -35,7 +35,7 @@ int cmp(pkt *p1, pkt *p2) { // p1 > p2 => true
     int s1=pkt_get_seqnum(p1);
     int s2=pkt_get_seqnum(p2);
     if (s1<s2 && s2-s1>100) return 1; // s1.................s2
-    if (s1>=s2 && s2-s1>100) return 0; // s2................s1
+    if (s1>=s2 && s1-s2>100) return 0; // s2................s1
     return s1>s2; // s2...s1 ou s1....s2
 }
 
@@ -88,7 +88,7 @@ pkt* peek(list_t* list) {
  *        
  * @post : return the first elem and delete it if it exist
  */
-struct pkt* pop(list_t *list, ) {
+struct pkt* pop(list_t *list) {
     pkt* resp = peek(list);
     if (resp != NULL)
         list->first_t = list->first_t->next_t;

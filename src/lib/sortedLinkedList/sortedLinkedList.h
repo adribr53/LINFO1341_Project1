@@ -14,6 +14,7 @@ typedef struct list {
 list_t *new_list();
 node_t *new_node(pkt_t *packet);
 int add(list_t *list, pkt_t *packet);
-uint8_t remove(list_t *list);
+pkt* peek(list_t* list);
+struct pkt* pop(list_t *list);
 int is_empty(list_t *list);
 
