@@ -11,9 +11,9 @@
 
 
 #include "log.h"
-#include "Inginious/sendData/create_socket.h"
-#include "Inginious/sendData/read_write_loop_sender.h"
-#include "Inginious/sendData/real_address.h"
+#include "lib/sendData/create_socket.h"
+#include "lib/sendData/read_write_loop_sender.h"
+#include "lib/sendData/real_address.h"
 
 int print_usage(char *prog_name) {
     ERROR("Usage:\n\t%s [-f filename] [-s stats_filename] receiver_ip receiver_port", prog_name);
