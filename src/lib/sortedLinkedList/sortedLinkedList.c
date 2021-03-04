@@ -12,8 +12,6 @@
  */
 list_t *new_list() {
     list_t *toR =(list_t *) malloc(sizeof(list_t));
-    if (toR == NULL) return NULL;
-    toR->first = NULL;
     return toR;
 }
 
@@ -24,16 +22,16 @@ list_t *new_list() {
  *         			 that contains value as value
  *        
  */
-node_t *new_node(pkt_t *packet) {
+/*node_t *new_node(pkt_t *packet) {
     node_t *toR= (node_t *) malloc(sizeof(node_t));
     if (toR==NULL) return NULL;
     toR->next_t=NULL;
     toR->packet_t=packet;
     return toR;
-}
+}*/
 
 /* cmp de seqnum */
-int cmp(pkt *p1, pkt *p2) {
+int cmp(pkt *p1, pkt *p2) { // p1 > p2 => true
     int s1=pkt_get_seqnum(p1);
     int s2=pkt_get_seqnum(p2);
     if (s1<s2 && s2-s1>100) return 1; // s1.................s2
@@ -41,53 +39,60 @@ int cmp(pkt *p1, pkt *p2) {
     return s1>s2; // s2...s1 ou s1....s2
 }
 
+int pkt_equal(pkt* p1, pkt* p2) {
+    return pkt_get_seqnum(p1) == pkt_get_seqnum(p2);
+}
 /*
  * @pre : list is a pointer to a struct list
  *        value is an unsigned long long
- *        mallocrelated to newNode won't fail
+ *        malloc related to newNode won't fail
  * @post : the function returns 0
  *         the number value is added to the struct pointed by list
  *         the size is increased
  * Rem :   (if malloc fails, return -1 and does nothing else)
  */
 int add(list_t *list, pkt_t packet) {
-    
-    node_t *toAdd = new_node(packet);
-    if (toAdd == NULL || list == NULL) return 1;
-    node_t *cur=list->first_t;
-    if (cur==NULL) {
-        list->first_t=toAdd;
+    node_t *newNode = malloc(sizeof(node_t));
+    newNode->pkt_t = &packet;
+    if (list->first_t == NULL) {
+        list->first_t = newNode;
     } else {
-        do {
-            if ()
-        } while ();
+        node_t *curr = list->first_t;
+        if (cmp(curr->packet_t , packet)) {
+            newNode->next_t=curr;
+            list->first_t = newNode;
+        } else {
+            while (curr->next_t != NULL && cmp(packet, curr->next_t->packet_t)) {
+                curr = curr->next_t;
+            }
+            if (pkt_equal(&packet, curr->packet_t)) return -1;
+            newNode->next_t = curr->next_t;
+            curr->next_t = newNode;
+        }
     }
-
     return 0;
 }
 
 
 /*
- * @pre : list is a pointer to a list
- *        
- * @post : the function removes the last element from the pointed list 
- *              return -1 if the list is empty
- *         		returns the removed value
- *        		reduces the size
+ * @pre : list is a (non null) pointer to a list
+ *
+ * @post : return the first elem
  */
-uint8_t remove(list_t *list) {
-    if (list->size == 0) {return -1;}
-    uint8_t toR = list->first->value;
-    node_t *toFree = list->first;
-    if (list->size == 1) {
-        list->first = NULL;
-        list->last = NULL;
-    } else {
-        list->first = list->first->next;
-    }
-    free(toFree);
-    list->size--;
-    return toR;
+pkt* peek(list_t* list) {
+    return list->first_t;
+}
+
+/*
+ * @pre : list is a (non null) pointer to a list
+ *        
+ * @post : return the first elem and delete it if it exist
+ */
+struct pkt* pop(list_t *list, ) {
+    pkt* resp = peek(list);
+    if (resp != NULL)
+        list->first_t = list->first_t->next_t;
+    return resp;
 }
 
 
