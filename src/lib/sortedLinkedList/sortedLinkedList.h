@@ -14,6 +14,6 @@ typedef struct list {
 list_t *new_list();
 node_t *new_node(pkt_t *packet);
 int add(list_t *list, pkt_t *packet);
-uint8_t remove(list_t *list);
+pkt_t *remove(list_t *list, uint8_t seqnum);
 int is_empty(list_t *list);
 

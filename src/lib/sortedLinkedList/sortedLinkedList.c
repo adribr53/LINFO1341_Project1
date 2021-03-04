@@ -37,7 +37,7 @@ int cmp(pkt *p1, pkt *p2) {
     int s1=pkt_get_seqnum(p1);
     int s2=pkt_get_seqnum(p2);
     if (s1<s2 && s2-s1>100) return 1; // s1.................s2
-    if (s1>=s2 && s2-s1>100) return 0; // s2................s1
+    if (s1>=s2 && s1-s2>100) return 0; // s2................s1
     return s1>s2; // s2...s1 ou s1....s2
 }
 
@@ -75,7 +75,7 @@ int add(list_t *list, pkt_t packet) {
  *         		returns the removed value
  *        		reduces the size
  */
-uint8_t remove(list_t *list) {
+int8_t remove(list_t *list, uint8_t seqnum) {
     if (list->size == 0) {return -1;}
     uint8_t toR = list->first->value;
     node_t *toFree = list->first;
