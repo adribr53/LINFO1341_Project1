@@ -100,6 +100,7 @@ pkt_status_code pkt_decode(const char *data, const size_t len, pkt_t *pkt)
             unsigned char *crc2Support=(unsigned char *) pkt->payload;
             uint32_t crc2= (uint32_t) crc32(0L, Z_NULL, 0);
             crc2 = crc32(crc2, crc2Support, pkt->length);
+            if (crc2!=pkt_get_crc2(pkt)) return E_CRC;
         }
     }
     return PKT_OK;
@@ -238,14 +239,33 @@ pkt_status_code pkt_set_timestamp(pkt_t *pkt, const uint32_t timestamp)
     return PKT_OK;
 }
 
+uint32_t pkt_comp_crc1(pkt_t *pkt) {
+    // TO DO : fabriquer le header
+    unsigned char header[predict_header_length(pkt)];
+    memcpy(header, src, predict_header_length(pkt));
+    if (pkt_get_tr()==1) header[0]-=32;
+    uint32_t crc1Comp= (uint32_t) crc32(0L, Z_NULL, 0);
+    crc1Comp = crc32(crc1, header, lengthHeader);
+}
 pkt_status_code pkt_set_crc1(pkt_t *pkt, const uint32_t crc1)
 {
+    uint32_t crc1Comp=pkt_comp_crc1(pkt);
+    if (crc1!=crc1Comp) return E_CRC;
     pkt->crc1=crc1;
     return PKT_OK;
 }
 
+uint32_t pkt_comp_crc2(pkt_t *pkt) {
+    unsigned char *crc2Support=(unsigned char *) pkt->payload;
+    uint32_t crc2= (uint32_t) crc32(0L, Z_NULL, 0);
+    crc2 = crc32(crc2, crc2Support, pkt->length);
+    return crc2;
+}
+
 pkt_status_code pkt_set_crc2(pkt_t *pkt, const uint32_t crc2)
 {
+    pkt_comp_crc2(pkt);
+    if (pkt_comp_crc2(pkt)!=crc2) return E_CRC;
     pkt->crc2=crc2;
     return PKT_OK;
 }
@@ -262,12 +282,13 @@ pkt_status_code pkt_set_payload(pkt_t *pkt,
 
 ssize_t predict_header_length(const pkt_t *pkt)
 {
-    return pkt->length;
+
+    return (pkt->type==PTYPE_DATA) ? 8 : 6;
 }
 
-
-/*int main() {
-    char content[]= {0x5c, 0x00, 0x0b, 0x7b, 0x17, 0x00, 0x00, 0x00, 0x4e, 0xa0, 0x77, 0xdb, 0x68, 0x65, 0x6c, 0x6c,
+/*
+int main() {
+    const char content[]= {0x5c, 0x00, 0x0b, 0x7b, 0x17, 0x00, 0x00, 0x00, 0x4e, 0xa0, 0x77, 0xdb, 0x68, 0x65, 0x6c, 0x6c,
                      0x6f, 0x20, 0x77, 0x6f, 0x72, 0x6c, 0x64, 0x0d, 0x4a, 0x11, 0x85};
     char next[27]={0};
       5c ->first 00 0b->length 7b ->seq  17 00 00 00->timestamp(pas converti en local) 4e a0 77 db->crc1 68 65 6c 6c
@@ -288,8 +309,9 @@ ssize_t predict_header_length(const pkt_t *pkt)
     for (int i=0; i<27; i++) {
         printf("it %d\n", i);
         printf("init %x\n", content[i]);
-        printf("final %x\n", content[i]);
+        printf("final %x\n", next[i]);
         printf("\n");
     }
+    printf("ptn\n");
 }*/
 

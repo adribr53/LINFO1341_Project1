@@ -109,6 +109,7 @@ pkt_status_code pkt_set_window   (pkt_t*, const uint8_t window);
 pkt_status_code pkt_set_seqnum   (pkt_t*, const uint8_t seqnum);
 pkt_status_code pkt_set_length   (pkt_t*, const uint16_t length);
 pkt_status_code pkt_set_timestamp(pkt_t*, const uint32_t timestamp);
+pkt_status_code pkt_comp_crc1(pkt_t *);
 pkt_status_code pkt_set_crc1     (pkt_t*, const uint32_t crc1);
 /* Defini la valeur du champs payload du paquet.
  * @data: Une succession d'octets representants le payload
@@ -121,6 +122,7 @@ pkt_status_code pkt_set_payload(pkt_t*,
  * native de la machine!
  */
 pkt_status_code pkt_set_crc2(pkt_t*, const uint32_t crc2);
+pkt_status_code pkt_comp_crc2(pkt_t *);
 
 /*
  * Retourne la longueur du header en bytes si le champs pkt->length

@@ -19,8 +19,8 @@ void read_write_loop_sender(const int sfd, const int input_fd) {
     sockPoll.events=POLLIN;
 
     struct pollfd inputPoll;
-    stdinPoll.fd=input_fd;
-    stdinPoll.events=POLLIN;
+    inputPoll.fd=input_fd;
+    inputPoll.events=POLLIN;
 
     pfd[0]=sockPoll;
     pfd[1]=inputPoll;
@@ -31,7 +31,7 @@ void read_write_loop_sender(const int sfd, const int input_fd) {
     // int waitForAck = FALSE;
     while (1) {
         poll(pfd, 2 , -1);
-        if (!waitForAck && (pfd[0].revents & POLLIN)) {
+        if (pfd[1].revents & POLLIN) {
             // read(stdin) -> write(socket)
             nb=read(input_fd, buf, 1024);
             if (nb==0) return;
@@ -39,9 +39,9 @@ void read_write_loop_sender(const int sfd, const int input_fd) {
             if (err<0) return;
             // waitForAck = TRUE;
         }
-        if (waitForAck && (pfd[1].revents & POLLIN)) {
+        /*if (pfd[0].revents & POLLIN) {
             // read(socket) -> write(stdout)
             nb=read(sfd, buf, 1024);
-        }
+        }*/
     }
 }
