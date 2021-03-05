@@ -57,7 +57,7 @@ void read_write_loop_sender(const int sfd, const int input_fd) {
     char pkt_buffer[MAX_PAYLOAD_SIZE+16];
     int nb;
     int err;
-    uint32_t TIMEOUT = 100000;
+    uint32_t TIMEOUT = 1000;
     uint8_t seqnum = 0;
     uint8_t startWindow = 0, endWindow = 0;
     uint8_t pktInWindow = 0;
@@ -74,7 +74,8 @@ void read_write_loop_sender(const int sfd, const int input_fd) {
     uint8_t receive_seqnum;
     // int waitForAck = FALSE;
     while (1) {
-        poll(pfd, 2 , TIMEOUT);
+        int pollresp = poll(pfd, 2 , TIMEOUT);
+        // if (pollresp == 0) printf("POLL EXPIRE\n");
         if (pfd[1].revents & POLLIN) {
             // read(stdin) -> write(socket)
             if (pktInWindow < sendingWindowSize) {
@@ -92,22 +93,29 @@ void read_write_loop_sender(const int sfd, const int input_fd) {
                 print_sent_pkt(socketPkt);
                 sendingWindow[endWindow] = socketPkt;
                 err=write(sfd, pkt_buffer, size); // sendto ???
+                // err = sendto(sfd, pkt_buffer, size, 0, (const struct sockaddr *) &receiver_addr, sizeof(receiver_addr));
                 if (err<0) return;
 
                 endWindow = (endWindow+1)%31;
                 pktInWindow++;
+                seqnum++;
             }
             // waitForAck = TRUE;
         }
+
         if (pfd[0].revents & POLLIN) {
             // read(socket) -> write(stdout)
+            printf("COUCOU LA MIF\n");
             nb=read(sfd, pkt_buffer, 12);
+
             socketResp = pkt_decode(pkt_buffer, 12, socketPkt);
             if (socketResp == PKT_OK) { // if pkt not ok we just drop it
+                printf("Hello there !\n");
                 switch ((int) pkt_get_type(socketPkt)) {
                     case 2:
                         // ACK
                         receive_seqnum = pkt_get_seqnum(socketPkt);
+                        printf("ACK N°%d\n", receive_seqnum);
                         if (is_in_window_interval(receive_seqnum, startWindow, endWindow)) { // pkt stored in receiver buffer or duplicate
                             int i = startWindow;
                             while (receive_seqnum != pkt_get_seqnum(sendingWindow[i % 31]) && i < 31) i++;
@@ -143,8 +151,10 @@ void read_write_loop_sender(const int sfd, const int input_fd) {
                 pkt_set_timestamp(sendingWindow[i], (uint32_t) clock()); // update timestamp
                 size_t size = (size_t) MAX_PAYLOAD_SIZE + 16;
                 if (pkt_encode(sendingWindow[i], pkt_buffer, &size) != PKT_OK) return; // encode pkt -> buf
+                printf("RESEND PAKET\n");
                 print_sent_pkt(sendingWindow[i]);
                 err=write(sfd, pkt_buffer, size); // sendto ???
+                // err = sendto(sfd, pkt_buffer, size, 0, (const struct sockaddr *) &receiver_addr, sizeof(receiver_addr));
                 if (err<0) {
                     fprintf(stderr, "Value of errno: %d\n", errno);
                     fprintf(stderr, "Error opening file: %s\n", strerror( errno ));
