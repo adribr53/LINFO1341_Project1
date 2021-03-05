@@ -31,7 +31,7 @@ void treatment_pkt(char *msg, unsigned int length, const int sfd, const int outf
         size_t nbBytes=10;
         char *reply=malloc(nbBytes);
         pkt_encode(pktAck, reply, &nbBytes);
-        size_t wrote = send(sfd, reply, nbBytes, MSG_CONFIRM);
+        size_t wrote = sendto(sfd, reply, nbBytes, MSG_CONFIRM);
         pkt_del(pkt);
     } else if (pkt_get_seqnum(pkt)==curSeqnum) {
         // envoi du paquet recu et de ceux qui seraient dans le buffer
@@ -78,7 +78,9 @@ void treatment_pkt(char *msg, unsigned int length, const int sfd, const int outf
         size_t nbBytes=10;
         char *reply=malloc(nbBytes);
         pkt_encode(pktAck, reply, &nbBytes);
-        size_t wrote = send(sfd, reply, nbBytes, MSG_CONFIRM);
+        printf("write is about to end this man's whole career\n");
+        size_t wrote = write(sfd, reply, nbBytes);
+        printf("Did we do it ?");
         pkt_del(pkt);
         free(reply);
     } else {
