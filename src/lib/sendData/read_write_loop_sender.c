@@ -4,6 +4,9 @@
 #include <poll.h> // poll
 #include <unistd.h> // read
 #include <time.h>
+#include <stdlib.h>
+#include <errno.h>
+#include <string.h>
 
 #include "read_write_loop_sender.h"
 #include "../segment/packet_interface.h"
@@ -50,20 +53,23 @@ void read_write_loop_sender(const int sfd, const int input_fd) {
     pfd[0]=sockPoll;
     pfd[1]=inputPoll;
 
-    char buf[512];
+    char payload_buffer[MAX_PAYLOAD_SIZE];
+    char pkt_buffer[MAX_PAYLOAD_SIZE+16];
     int nb;
     int err;
-    uint32_t TIMEOUT = 1000;
+    uint32_t TIMEOUT = 276447232;
     uint8_t seqnum = 0;
     uint8_t startWindow = 0, endWindow = 0;
     uint8_t pktInWindow = 0;
     struct pkt* sendingWindow[31];
-    for (int i = 0; i < 31; i++)
+    for (int i = 0; i < 31; i++) {
+        sendingWindow[i] = pkt_new();
         pkt_set_type(sendingWindow[i], 0);
+    }
 
     uint8_t sendingWindowSize = 31;
 
-    pkt_t *socketPkt;
+    pkt_t *socketPkt = pkt_new();
     int socketResp;
     uint8_t receive_seqnum;
     // int waitForAck = FALSE;
@@ -72,30 +78,31 @@ void read_write_loop_sender(const int sfd, const int input_fd) {
         if (pfd[1].revents & POLLIN) {
             // read(stdin) -> write(socket)
             if (pktInWindow < sendingWindowSize) {
-                nb=read(input_fd, buf, 512);
+                nb=read(input_fd, payload_buffer, MAX_PAYLOAD_SIZE);
                 if (nb==0) return; // all data has been sent
+                pkt_set_type(socketPkt, 1);
+                pkt_set_tr(socketPkt, 0);
+                pkt_set_window(socketPkt, sendingWindowSize);
+                pkt_set_seqnum(socketPkt, seqnum);
+                pkt_set_length(socketPkt, nb);
+                pkt_set_timestamp(socketPkt, (uint32_t) clock());
+                pkt_set_payload(socketPkt, payload_buffer, nb);
+                size_t size = (size_t) MAX_PAYLOAD_SIZE + 16;
+                if (pkt_encode(socketPkt, pkt_buffer, &size) != PKT_OK) return; // encode pkt -> buf
+                print_sent_pkt(socketPkt);
+                sendingWindow[endWindow] = socketPkt;
+                err=write(sfd, pkt_buffer, size); // sendto ???
+                if (err<0) return;
+
                 endWindow = (endWindow+1)%31;
                 pktInWindow++;
-                pkt_set_type(sendingWindow[endWindow], 1);
-                pkt_set_tr(sendingWindow[endWindow], 0);
-                pkt_set_window(sendingWindow[endWindow], sendingWindowSize);
-                pkt_set_seqnum(sendingWindow[endWindow], seqnum);
-                pkt_set_length(sendingWindow[endWindow], nb);
-                pkt_set_timestamp(sendingWindow[endWindow], (uint32_t) clock());
-                pkt_set_crc1(sendingWindow[endWindow], pkt_comp_crc1(sendingWindow[endWindow]));
-                pkt_set_payload(sendingWindow[endWindow], buf, nb);
-                pkt_set_crc2(sendingWindow[endWindow], pkt_comp_crc2(sendingWindow[endWindow]));
-                size_t size = (size_t) nb;
-                if (pkt_encode(sendingWindow[endWindow], buf, &size) != PKT_OK) return; // encode pkt -> buf
-                err=write(sfd, buf, nb); // sendto ???
-                if (err<0) return;
             }
             // waitForAck = TRUE;
         }
         if (pfd[0].revents & POLLIN) {
             // read(socket) -> write(stdout)
-            nb=read(sfd, buf, 12);
-            socketResp = pkt_decode(buf, 12, socketPkt);
+            nb=read(sfd, pkt_buffer, 12);
+            socketResp = pkt_decode(pkt_buffer, 12, socketPkt);
             if (socketResp == PKT_OK) { // if pkt not ok we just drop it
                 switch ((int) pkt_get_type(socketPkt)) {
                     case 2:
@@ -119,10 +126,11 @@ void read_write_loop_sender(const int sfd, const int input_fd) {
                         int i = 0;
                         while (pkt_get_seqnum(sendingWindow[i]) != pkt_get_seqnum(socketPkt)) i++; // maybe compute it later
                         pkt_set_timestamp(sendingWindow[i], (uint32_t) clock()); // update timestamp
-                        size_t size = pkt_get_length(sendingWindow[i]);
-                        if (pkt_encode(sendingWindow[i], buf, &size) != PKT_OK) return;
-                        err=write(sfd, buf, pkt_get_length(sendingWindow[i])); // Send the packet back
-                        if (err < 0) return;
+                        size_t size = (size_t) MAX_PAYLOAD_SIZE + 16;
+                        if (pkt_encode(sendingWindow[endWindow], pkt_buffer, &size) != PKT_OK) return; // encode pkt -> buf
+                        print_sent_pkt(sendingWindow[endWindow]);
+                        err=write(sfd, pkt_buffer, size); // sendto ???
+                        if (err<0) return;
                         break;
                 }
             }
@@ -133,10 +141,16 @@ void read_write_loop_sender(const int sfd, const int input_fd) {
             if (pkt_get_timestamp(sendingWindow[i]) + TIMEOUT < (uint32_t) clock()) {
                 // RT expire => resend the pkt
                 pkt_set_timestamp(sendingWindow[i], (uint32_t) clock()); // update timestamp
-                size_t size = pkt_get_length(sendingWindow[i]);
-                if (pkt_encode(sendingWindow[i], buf, &size) != PKT_OK) return;
-                err=write(sfd, buf, pkt_get_length(sendingWindow[i])); // Send the packet back
-                if (err < 0) return;
+                size_t size = (size_t) MAX_PAYLOAD_SIZE + 16;
+                if (pkt_encode(sendingWindow[i], pkt_buffer, &size) != PKT_OK) return; // encode pkt -> buf
+                print_sent_pkt(sendingWindow[i]);
+                err=write(sfd, pkt_buffer, size); // sendto ???
+                if (err<0) {
+                    fprintf(stderr, "Value of errno: %d\n", errno);
+                    fprintf(stderr, "Error opening file: %s\n", strerror( errno ));
+                    printf("je suis con\n");
+                    return;
+                }
             }
             i = (i + 1) % 31;
         }
