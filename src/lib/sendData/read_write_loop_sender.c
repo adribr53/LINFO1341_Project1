@@ -28,13 +28,6 @@ void print_sent_pkt(pkt_t* paket) {
     fprintf(stderr, "=== BRRRRRRR ===\n\n");
 }
 
-int is_in_window_interval(uint8_t seqnum, uint8_t start, uint8_t end) {
-    if (start < end) {
-        return (start <= seqnum) && (seqnum <= end);
-    } else {
-        return (start <= seqnum) && (seqnum <= end);
-    }
-}
 
 void read_write_loop_sender(const int sfd, const int input_fd) {
     struct pollfd pfd[2];
@@ -112,26 +105,27 @@ void read_write_loop_sender(const int sfd, const int input_fd) {
 
             socketResp = pkt_decode(pkt_buffer, 12, socketPkt);
             if (socketResp == PKT_OK) { // if pkt not ok we just drop it
+                uint8_t i;
                 switch ((int) pkt_get_type(socketPkt)) {
                     case 2:
                         // ACK
                         receive_seqnum = pkt_get_seqnum(socketPkt);
                         fprintf(stderr, "ACK N°%d", receive_seqnum);
-                        if (is_in_window_interval(receive_seqnum, startWindow, endWindow)) { // pkt stored in receiver buffer or duplicate
-                            // fprintf(stderr, "Brrrr\n");
-                            uint8_t i = startWindow;
-                            while (receive_seqnum != pkt_get_seqnum(sendingWindow[i%31])) i++;
+                        // fprintf(stderr, "Brrrr\n");
+                        i = startWindow;
+                        while (receive_seqnum != pkt_get_seqnum(sendingWindow[i%31])) i++;
+                        if (pkt_get_timestamp(socketPkt) == pkt_get_timestamp(sendingWindow[i%31])) {
                             uint8_t delta = i-startWindow+1;
                             startWindow = i%31;
                             pktInWindow -= delta;
                             sendingWindowSize = sendingWindowSize == 31 ? 31 : sendingWindowSize+1;
+                            fprintf(stderr,"\t paket left in window : %d\n", pktInWindow);
                         }
-                        fprintf(stderr,"\t paket left in window : %d\n", pktInWindow);
                         break;
                     case 3:
                         // NACK
                         sendingWindowSize = sendingWindowSize == 1 ? 1 : sendingWindowSize/2; // Resize sending window
-                        int i = 0;
+                        i = 0;
                         while (pkt_get_seqnum(sendingWindow[i]) != pkt_get_seqnum(socketPkt)) i++; // maybe compute it later
                         pkt_set_timestamp(sendingWindow[i], (uint32_t) clock()); // update timestamp
                         size_t size = (size_t) MAX_PAYLOAD_SIZE + 16;
