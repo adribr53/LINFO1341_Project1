@@ -22,9 +22,9 @@ void treatment_pkt(char *msg, unsigned int length, const int sfd, const int outf
         fprintf(stderr, "packet corrupted");
         return;
     }
-    printf("Nous voilà dans treatment pkt, on a decode\n");
+    //printf("Nous voilà dans treatment pkt, on a decode\n");
     printf("seqnum receved : %d\n", pkt_get_seqnum(pkt));
-    printf("seqnum waited : %d\n", curSeqnum);
+    //printf("seqnum waited : %d\n", curSeqnum);
     if (pkt_get_tr(pkt)==1) {
         // envoi de l'ack
         printf("packet truncated\n");
@@ -42,7 +42,7 @@ void treatment_pkt(char *msg, unsigned int length, const int sfd, const int outf
         pkt_del(pkt);
     } else if (pkt_get_seqnum(pkt)==curSeqnum) {
         // envoi du paquet recu et de ceux qui seraient dans le buffer
-        write(outfd, pkt_get_payload(pkt), pkt_get_length(pkt));
+        // write(outfd, pkt_get_payload(pkt), pkt_get_length(pkt)); TODO REMOVE THIS
         pkt_t *nextPkt=peek(window);
         if (nextPkt!=NULL && pkt_get_seqnum(nextPkt)==curSeqnum) {
             pop(window);
@@ -52,10 +52,13 @@ void treatment_pkt(char *msg, unsigned int length, const int sfd, const int outf
             i=(i+1)%256;
             nextPkt=peek(window);
             if (nextPkt!=NULL && pkt_get_seqnum(nextPkt)==i) {
+                //printf("I am here to die, write\n");
                 write(outfd, pkt_get_payload(nextPkt), pkt_get_length(nextPkt));
+                //printf("I am here to help, write\n");
             }
             else break;
         } while (1);
+        //printf("I passed\n");
         // envoi de l'ack
         pkt_t *pktAck=pkt_new();
         pkt_set_type(pktAck, PTYPE_ACK);
@@ -69,7 +72,10 @@ void treatment_pkt(char *msg, unsigned int length, const int sfd, const int outf
         size_t nbBytes=10;
         char *reply=malloc(nbBytes);
         pkt_encode(pktAck, reply, &nbBytes);
+        //printf("write is about to end this man's whole career\n");
         size_t wrote = send(sfd, reply, nbBytes, MSG_CONFIRM);
+        printf("Send ack N°%d\n", curSeqnum);
+        //printf("Did we do it ?");
         pkt_del(pkt);
         free(reply);
     } else {
@@ -102,7 +108,7 @@ void read_write_loop_server(const int sfd, const int outfd) {
     char buf[MAX_PAYLOAD_SIZE+16];
     int nb;
     while (1) {
-        printf("=========LOOP===========\n");
+        // printf("=========LOOP===========\n");
         poll(&sfdPoll, 1 , -1);
         if (sfdPoll.revents & POLLIN) {
             //read(socket) -> write(stdout) ou send(socket)
