@@ -17,7 +17,7 @@ void treatment_pkt(char *msg, unsigned int length, const int sfd, const int outf
         return;
     }
     //printf("Nous voilà dans treatment pkt, on a decode\n");
-    printf("seqnum receved : %d\n", pkt_get_seqnum(pkt));
+    //printf("seqnum receved : %d\n", pkt_get_seqnum(pkt));
     //printf("seqnum waited : %d\n", curSeqnum);
     if (pkt_get_tr(pkt)==1) {
         // envoi de l'ack
@@ -40,7 +40,7 @@ void treatment_pkt(char *msg, unsigned int length, const int sfd, const int outf
     } else if (pkt_get_seqnum(pkt)==curSeqnum) {
         // printf("right seqnum");
         // envoi du paquet recu et de ceux qui seraient dans le buffer
-        // write(outfd, pkt_get_payload(pkt), pkt_get_length(pkt)); TODO REMOVE THIS
+        write(outfd, pkt_get_payload(pkt), pkt_get_length(pkt));
         pkt_t *nextPkt=peek(window);
         /*if (pkt == NULL) {
             return;
@@ -86,14 +86,14 @@ void treatment_pkt(char *msg, unsigned int length, const int sfd, const int outf
         pkt_encode(pktAck, reply, &nbBytes);
         //printf("write is about to end this man's whole career\n");
         size_t wrote = send(sfd, reply, nbBytes, MSG_CONFIRM);
-        printf("Send ack N°%d\n", curSeqnum);
+        //printf("Send ack N°%d\n", curSeqnum);
         //printf("Did we do it ?");
         pkt_del(pkt);
         free(reply);
-        printf("next seqnum waited : %d\n", curSeqnum);
+        //printf("next seqnum waited : %d\n", curSeqnum);
 
     } else {
-        printf("wrong seqnum\n");
+        //printf("wrong seqnum\n");
         int tmp=pkt_get_seqnum(pkt)-curSeqnum;
         if (tmp<0) tmp+=256;
         if (tmp>MAX_WINDOW_SIZE) return;

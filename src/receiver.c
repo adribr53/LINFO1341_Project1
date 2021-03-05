@@ -76,18 +76,18 @@ int main(int argc, char **argv) {
     DEBUG_DUMP("Some bytes", 11); // You can use it with any pointer type
 
     // This is not an error per-se.
-    ERROR("Receiver has following arguments: stats_filename is %s, listen_ip is %s, listen_port is %u",
-        stats_filename, listen_ip, listen_port);
+    //ERROR("Receiver has following arguments: stats_filename is %s, listen_ip is %s, listen_port is %u",
+    //    stats_filename, listen_ip, listen_port);
 
     DEBUG("You can only see me if %s", "you built me using `make debug`");
-    ERROR("This is not an error, %s", "now let's code!");
+    //ERROR("This is not an error, %s", "now let's code!");
 
     // Now let's code!
     if (connection_to_sender(listen_ip, listen_port)!=0) {
         fprintf(stdout, "Error during the execution of connection_to_sender");
         return EXIT_FAILURE;
     }
-    printf("first\n");
+    // printf("first\n");
     read_write_loop_server(sock, 2);
 
     return EXIT_SUCCESS;
