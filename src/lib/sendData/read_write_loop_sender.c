@@ -29,7 +29,6 @@ void print_sent_pkt(pkt_t* paket) {
 }
 
 int is_in_window_interval(uint8_t seqnum, uint8_t start, uint8_t end) {
-    if (seqnum > 31) fprintf(stderr, "WTF ???\n");
     if (start < end) {
         return (start <= seqnum) && (seqnum <= end);
     } else {
@@ -81,46 +80,45 @@ void read_write_loop_sender(const int sfd, const int input_fd) {
             // read(stdin) -> write(socket)
             if (pktInWindow < sendingWindowSize) {
                 nb=read(input_fd, payload_buffer, MAX_PAYLOAD_SIZE);
-                if (nb==0) return; // all data has been sent
-                pkt_set_type(socketPkt, 1);
-                pkt_set_tr(socketPkt, 0);
-                pkt_set_window(socketPkt, sendingWindowSize);
-                pkt_set_seqnum(socketPkt, seqnum);
-                pkt_set_length(socketPkt, nb);
-                pkt_set_timestamp(socketPkt, (uint32_t) clock());
-                pkt_set_payload(socketPkt, payload_buffer, nb);
-                size_t size = (size_t) MAX_PAYLOAD_SIZE + 16;
-                if (pkt_encode(socketPkt, pkt_buffer, &size) != PKT_OK) return; // encode pkt -> buf
-                print_sent_pkt(socketPkt);
-                sendingWindow[endWindow] = socketPkt;
-                err=write(sfd, pkt_buffer, size); // sendto ???
-                // err = sendto(sfd, pkt_buffer, size, 0, (const struct sockaddr *) &receiver_addr, sizeof(receiver_addr));
-                if (err<0) return;
-
-                endWindow = (endWindow+1)%31;
-                pktInWindow++;
-                seqnum++;
-                fprintf(stderr, "SEQNUM ENCULE%d\n", seqnum);
-            } else {
-                fprintf(stderr, "NTM\n");
+                if (nb != 0) {
+                    pkt_set_type(socketPkt, 1);
+                    pkt_set_tr(socketPkt, 0);
+                    pkt_set_window(socketPkt, sendingWindowSize);
+                    pkt_set_seqnum(socketPkt, seqnum);
+                    pkt_set_length(socketPkt, nb);
+                    pkt_set_timestamp(socketPkt, (uint32_t) clock());
+                    pkt_set_payload(socketPkt, payload_buffer, nb);
+                    size_t size = (size_t) MAX_PAYLOAD_SIZE + 16;
+                    if (pkt_encode(socketPkt, pkt_buffer, &size) != PKT_OK) {fprintf(stderr, "Error while encoding pkt\n"); return; } // encode pkt -> buf
+                    // print_sent_pkt(socketPkt);
+                    fprintf(stderr, "Paket N°%d has been sent\n", pkt_get_seqnum(socketPkt));
+                    sendingWindow[endWindow] = socketPkt;
+                    err=write(sfd, pkt_buffer, size); // sendto ???
+                    // err = sendto(sfd, pkt_buffer, size, 0, (const struct sockaddr *) &receiver_addr, sizeof(receiver_addr));
+                    if (err<0) {fprintf(stderr, "Error while sendting the pkt\n"); return; }
+                    endWindow = (endWindow+1)%31;
+                    pktInWindow++;
+                    seqnum++;
+                } else {
+                    if (sendingWindowSize == 0) {fprintf(stderr, "All data has been sent\n"); return; } // all data has been sent
+                }
             }
             // waitForAck = TRUE;
         }
 
         if (pfd[0].revents & POLLIN) {
             // read(socket) -> write(stdout)
-            fprintf(stderr, "COUCOU LA MIF\n");
             nb=read(sfd, pkt_buffer, 12);
 
             socketResp = pkt_decode(pkt_buffer, 12, socketPkt);
             if (socketResp == PKT_OK) { // if pkt not ok we just drop it
-                fprintf(stderr, "Hello there !\n");
                 switch ((int) pkt_get_type(socketPkt)) {
                     case 2:
                         // ACK
                         receive_seqnum = pkt_get_seqnum(socketPkt);
-                        fprintf(stderr, "ACK N°%d\n", receive_seqnum);
+                        fprintf(stderr, "ACK N°%d", receive_seqnum);
                         if (is_in_window_interval(receive_seqnum, startWindow, endWindow)) { // pkt stored in receiver buffer or duplicate
+                            // fprintf(stderr, "Brrrr\n");
                             uint8_t i = startWindow;
                             while (receive_seqnum != pkt_get_seqnum(sendingWindow[i%31])) i++;
                             uint8_t delta = i-startWindow+1;
@@ -128,6 +126,7 @@ void read_write_loop_sender(const int sfd, const int input_fd) {
                             pktInWindow -= delta;
                             sendingWindowSize = sendingWindowSize == 31 ? 31 : sendingWindowSize+1;
                         }
+                        fprintf(stderr,"\t paket left in window : %d\n", pktInWindow);
                         break;
                     case 3:
                         // NACK
@@ -136,10 +135,11 @@ void read_write_loop_sender(const int sfd, const int input_fd) {
                         while (pkt_get_seqnum(sendingWindow[i]) != pkt_get_seqnum(socketPkt)) i++; // maybe compute it later
                         pkt_set_timestamp(sendingWindow[i], (uint32_t) clock()); // update timestamp
                         size_t size = (size_t) MAX_PAYLOAD_SIZE + 16;
-                        if (pkt_encode(sendingWindow[endWindow], pkt_buffer, &size) != PKT_OK) return; // encode pkt -> buf
-                        print_sent_pkt(sendingWindow[endWindow]);
+                        if (pkt_encode(sendingWindow[endWindow], pkt_buffer, &size) != PKT_OK) {fprintf(stderr, "Error while encoding pkt NACK\n"); return; } // encode pkt -> buf
+                        // print_sent_pkt(sendingWindow[endWindow]);
+                        fprintf(stderr, "Paket N°%d has been resent (NACK resp)\n", pkt_get_seqnum(socketPkt));
                         err=write(sfd, pkt_buffer, size); // sendto ???
-                        if (err<0) return;
+                        if (err<0) {fprintf(stderr, "Error while resinding pkt NACK\n"); return; }
                         break;
                 }
             }
@@ -151,9 +151,9 @@ void read_write_loop_sender(const int sfd, const int input_fd) {
                 // RT expire => resend the pkt
                 pkt_set_timestamp(sendingWindow[i], (uint32_t) clock()); // update timestamp
                 size_t size = (size_t) MAX_PAYLOAD_SIZE + 16;
-                if (pkt_encode(sendingWindow[i], pkt_buffer, &size) != PKT_OK) return; // encode pkt -> buf
-                fprintf(stderr, "RESEND PAKET\n");
-                print_sent_pkt(sendingWindow[i]);
+                if (pkt_encode(sendingWindow[i], pkt_buffer, &size) != PKT_OK) {fprintf(stderr, "Error while encoding pkt RESEND\n"); return; } // encode pkt -> buf
+                fprintf(stderr, "RESEND PAKET %d\n", pkt_get_seqnum(sendingWindow[i]));
+                // print_sent_pkt(sendingWindow[i]);
                 err=write(sfd, pkt_buffer, size); // sendto ???
                 // err = sendto(sfd, pkt_buffer, size, 0, (const struct sockaddr *) &receiver_addr, sizeof(receiver_addr));
                 if (err<0) {

@@ -68,11 +68,14 @@ int main(int argc, char **argv) {
     printf("COUCOU\n");
 
     int infile_fd;
-    if (filename == NULL || strcmp(filename, "stdin")) {
+    if (filename == NULL || strcmp(filename, "stdin") == 0) {
+        ERROR("%d <=> %d\n", filename == NULL, strcmp(filename, "stdin"));
         if (filename == NULL) printf("Not filename found => set as STDIN\n");
         infile_fd = 0;
+        ERROR("BRRRRR\n");
     } else {
         infile_fd = open(filename, O_RDONLY);
+        ERROR("INFILE => %d\n", infile_fd);
         if (infile_fd < -1){
             ERROR("Error on reading input");
             return EXIT_FAILURE;
