@@ -82,9 +82,8 @@ void read_write_loop_sender(const int sfd, const int input_fd) {
                 pkt_set_seqnum(sendingWindow[endWindow], seqnum);
                 pkt_set_length(sendingWindow[endWindow], nb);
                 pkt_set_timestamp(sendingWindow[endWindow], (uint32_t) clock());
-                pkt_set_crc1(sendingWindow[endWindow], pkt_comp_crc1(sendingWindow[endWindow]));
                 pkt_set_payload(sendingWindow[endWindow], buf, nb);
-                pkt_set_crc2(sendingWindow[endWindow], pkt_comp_crc2(sendingWindow[endWindow]));
+                const char *tmp=
                 size_t size = (size_t) nb;
                 if (pkt_encode(sendingWindow[endWindow], buf, &size) != PKT_OK) return; // encode pkt -> buf
                 err=write(sfd, buf, nb); // sendto ???

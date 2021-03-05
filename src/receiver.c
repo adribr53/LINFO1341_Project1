@@ -4,10 +4,10 @@
 #include <stdint.h>
 
 #include "log.h"
-#include "./Inginious/sendData/real_address.h"
-#include "./Inginious/sendData/create_socket.h"
-#include "./Inginious/sendData/wait_for_client.h"
-#include "./Inginious/sendData/read_write_loop_server.h"
+#include "./lib/sendData/real_address.h"
+#include "./lib/sendData/create_socket.h"
+#include "./lib/sendData/wait_for_client.h"
+#include "./lib/sendData/read_write_loop_server.h"
 
 int sock;
 
