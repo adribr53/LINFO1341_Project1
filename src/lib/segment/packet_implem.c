@@ -182,6 +182,7 @@ uint16_t pkt_get_length(const pkt_t* pkt)
 
 uint32_t pkt_get_timestamp   (const pkt_t* pkt)
 {
+    if (pkt==NULL) printf("br null\n");
     return pkt->timestamp;
 }
 

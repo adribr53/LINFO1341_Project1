@@ -80,6 +80,7 @@ int add(list_t *list, pkt_t *packet) {
  * @post : return the first elem
  */
 pkt_t* peek(list_t* list) {
+    if (list->first_t==NULL) return NULL;
     return list->first_t->packet_t;
 }
 

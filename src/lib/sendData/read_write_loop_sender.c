@@ -57,7 +57,7 @@ void read_write_loop_sender(const int sfd, const int input_fd) {
     char pkt_buffer[MAX_PAYLOAD_SIZE+16];
     int nb;
     int err;
-    uint32_t TIMEOUT = 276447232;
+    uint32_t TIMEOUT = 100000;
     uint8_t seqnum = 0;
     uint8_t startWindow = 0, endWindow = 0;
     uint8_t pktInWindow = 0;
@@ -148,7 +148,6 @@ void read_write_loop_sender(const int sfd, const int input_fd) {
                 if (err<0) {
                     fprintf(stderr, "Value of errno: %d\n", errno);
                     fprintf(stderr, "Error opening file: %s\n", strerror( errno ));
-                    printf("je suis con\n");
                     return;
                 }
             }

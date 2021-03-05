@@ -16,6 +16,7 @@ void treatment_pkt(char *msg, unsigned int length, const int sfd, const int outf
         fprintf(stderr, "packet corrupted");
         return;
     }
+
     if (pkt_get_tr(pkt)==1) {
         // envoi de l'ack
         pkt_t *pktAck=pkt_new();
@@ -35,7 +36,15 @@ void treatment_pkt(char *msg, unsigned int length, const int sfd, const int outf
     } else if (pkt_get_seqnum(pkt)==curSeqnum) {
         // envoi du paquet recu et de ceux qui seraient dans le buffer
         write(outfd, pkt_get_payload(pkt), pkt_get_length(pkt));
+
         pkt=peek(window);
+        if (pkt == NULL) {
+            return;
+        }
+
+        printf("I found him...\n");
+
+
         if (pkt!=NULL && pkt_get_seqnum(pkt)==curSeqnum) {
             pop(window);
         }
@@ -44,7 +53,9 @@ void treatment_pkt(char *msg, unsigned int length, const int sfd, const int outf
             i=(i+1)%256;
             pkt=peek(window);
             if (pkt!=NULL && pkt_get_seqnum(pkt)==i) {
+                printf("I am here to die, write\n");
                 write(outfd, pkt_get_payload(pkt), pkt_get_length(pkt));
+                printf("I am here to help, write\n");
             }
             else break;
         } while (1);
@@ -55,9 +66,13 @@ void treatment_pkt(char *msg, unsigned int length, const int sfd, const int outf
         pkt_set_tr(pktAck, 0);
         pkt_set_window(pktAck, MAX_WINDOW_SIZE);
         curSeqnum=i-1;
+
         if (i<0) curSeqnum+=256;
+
         pkt_set_seqnum(pktAck, curSeqnum); // i sert d'ack pour tous les paquets envoyés
+
         pkt_set_length(pktAck, 0);
+
         pkt_set_timestamp(pktAck, pkt_get_timestamp(pkt));
 
         size_t nbBytes=10;
@@ -77,7 +92,6 @@ void treatment_pkt(char *msg, unsigned int length, const int sfd, const int outf
 
 
 void read_write_loop_server(const int sfd, const int outfd) {
-
     struct pollfd sfdPoll;
     sfdPoll.fd=sfd;
     sfdPoll.events=POLLIN;
