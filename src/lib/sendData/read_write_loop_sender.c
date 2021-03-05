@@ -77,7 +77,7 @@ void read_write_loop_sender(const int sfd, const int input_fd) {
         int pollresp = poll(pfd, 2 , TIMEOUT);
         // if (pollresp == 0) printf("POLL EXPIRE\n");
         if (pfd[1].revents & POLLIN) {
-            fprintf(stderr, "Excuse moi but wtf ? \n");
+            // fprintf(stderr, "Excuse moi but wtf ? \n");
             // read(stdin) -> write(socket)
             if (pktInWindow < sendingWindowSize) {
                 nb=read(input_fd, payload_buffer, MAX_PAYLOAD_SIZE);
@@ -101,6 +101,8 @@ void read_write_loop_sender(const int sfd, const int input_fd) {
                 pktInWindow++;
                 seqnum++;
                 fprintf(stderr, "SEQNUM ENCULE%d\n", seqnum);
+            } else {
+                fprintf(stderr, "NTM\n");
             }
             // waitForAck = TRUE;
         }
@@ -119,15 +121,12 @@ void read_write_loop_sender(const int sfd, const int input_fd) {
                         receive_seqnum = pkt_get_seqnum(socketPkt);
                         fprintf(stderr, "ACK N°%d\n", receive_seqnum);
                         if (is_in_window_interval(receive_seqnum, startWindow, endWindow)) { // pkt stored in receiver buffer or duplicate
-                            int i = startWindow;
-                            while (receive_seqnum != pkt_get_seqnum(sendingWindow[i % 31]) && i < 31) i++;
-                            if (i == 31) return; // should never happen
-                            if (pkt_get_timestamp(sendingWindow[i % 31]) == pkt_get_timestamp(socketPkt)) { // avoid duplicate packets
-                                i++;
-                                startWindow = (startWindow+i)%31;
-                                pktInWindow -= i;
-                                sendingWindowSize = sendingWindowSize == 31 ? 31 : sendingWindowSize+1;
-                            }
+                            uint8_t i = startWindow;
+                            while (receive_seqnum != pkt_get_seqnum(sendingWindow[i%31])) i++;
+                            uint8_t delta = i-startWindow+1;
+                            startWindow = i%31;
+                            pktInWindow -= delta;
+                            sendingWindowSize = sendingWindowSize == 31 ? 31 : sendingWindowSize+1;
                         }
                         break;
                     case 3:
