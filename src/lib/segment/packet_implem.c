@@ -229,7 +229,6 @@ pkt_status_code pkt_set_window(pkt_t *pkt, const uint8_t window)
 
 pkt_status_code pkt_set_seqnum(pkt_t *pkt, const uint8_t seqnum)
 {
-    if (pkt->seqnum >= pkt->window) return E_SEQNUM;
     pkt->seqnum=seqnum;
     return PKT_OK;
 }

@@ -77,6 +77,7 @@ void read_write_loop_sender(const int sfd, const int input_fd) {
                     pkt_set_type(socketPkt, 1);
                     pkt_set_tr(socketPkt, 0);
                     pkt_set_window(socketPkt, sendingWindowSize);
+                    fprintf(stderr, "SEQNUM ENCODE >> %d\n", seqnum);
                     pkt_set_seqnum(socketPkt, seqnum);
                     pkt_set_length(socketPkt, nb);
                     pkt_set_timestamp(socketPkt, (uint32_t) clock());
@@ -92,6 +93,7 @@ void read_write_loop_sender(const int sfd, const int input_fd) {
                     endWindow = (endWindow+1)%31;
                     pktInWindow++;
                     seqnum++;
+                    fprintf(stderr, "My supeeeeeeeeeeer number is %d\n", seqnum);
                 } else {
                     if (sendingWindowSize == 0) {fprintf(stderr, "All data has been sent\n"); return; } // all data has been sent
                 }
