@@ -44,7 +44,6 @@ int main(int argc, char **argv) {
             return print_usage(argv[0]);
         }
     }
-    printf("COUCOU\n");
 
 
     if (optind + 2 != argc) {
@@ -65,17 +64,14 @@ int main(int argc, char **argv) {
     // This is not an error per-se.
     ERROR("Sender has following arguments: filename is %s, stats_filename is %s, receiver_ip is %s, receiver_port is %u",
         filename, stats_filename, receiver_ip, receiver_port);
-    printf("COUCOU\n");
 
     int infile_fd;
     if (filename == NULL || strcmp(filename, "stdin") == 0) {
-        ERROR("%d <=> %d\n", filename == NULL, strcmp(filename, "stdin"));
         if (filename == NULL) printf("Not filename found => set as STDIN\n");
         infile_fd = 0;
-        ERROR("BRRRRR\n");
     } else {
         infile_fd = open(filename, O_RDONLY);
-        ERROR("INFILE => %d\n", infile_fd);
+        // ERROR("INFILE => %d\n", infile_fd);
         if (infile_fd < -1){
             ERROR("Error on reading input");
             return EXIT_FAILURE;
@@ -84,7 +80,7 @@ int main(int argc, char **argv) {
     printf("COUCOU\n");
 
     DEBUG("You can only see me if %s", "you built me using `make debug`");
-    ERROR("This is not an error, %s", "now let's code!");
+    // ERROR("This is not an error, %s", "now let's code!");
 
     // Now let's code!
 
