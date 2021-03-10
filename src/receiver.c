@@ -88,7 +88,7 @@ int main(int argc, char **argv) {
         return EXIT_FAILURE;
     }
     // printf("first\n");
-    read_write_loop_server(sock, 2);
+    read_write_loop_server(sock, 1);
 
     return EXIT_SUCCESS;
 }
