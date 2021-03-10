@@ -17,17 +17,9 @@ uint8_t seqnum_to_ack(uint8_t curSeqnum) {
 }
 
 void treatment_pkt(char *msg, unsigned int length, const int sfd, const int outfd) {
-    pkt_t *pkt=pkt_new(); // mettre en variable globale et set 0
-    if (pkt_decode(msg, length, pkt)!=PKT_OK) {
-        fprintf(stderr, "packet corrupted");
-        return;
-    }
-    //printf("Nous voilà dans treatment pkt, on a decode\n");
-    //printf("seqnum receved : %d\n", pkt_get_seqnum(pkt));
-    //printf("seqnum waited : %d\n", curSeqnum);
-    if (pkt_get_tr(pkt)==1) {
-        // envoi de l'ack
-        printf("packet truncated\n");
+    pkt_t *pkt=pkt_new();
+    if (pkt_decode(msg, length, pkt)!=PKT_OK || pkt_get_tr(pkt)==1) {
+        fprintf(stderr, "packet corrompu\n");
         pkt_t *pktAck=pkt_new();
         pkt_set_type(pktAck, PTYPE_NACK);
         pkt_set_tr(pktAck, 0);
@@ -40,7 +32,9 @@ void treatment_pkt(char *msg, unsigned int length, const int sfd, const int outf
         pkt_encode(pktAck, reply, &nbBytes);
         size_t wrote = send(sfd, reply, nbBytes, MSG_CONFIRM);
         pkt_del(pkt);
+        return;
     } else if (pkt_get_seqnum(pkt)==curSeqnum) {
+        fprintf(stderr, "numero attendu reçu : %d\n", curSeqnum);
         // envoi du paquet recu et de ceux qui seraient dans le buffer
         write(outfd, pkt_get_payload(pkt), pkt_get_length(pkt));
         pkt_t *nextPkt=peek(window);
@@ -72,13 +66,11 @@ void treatment_pkt(char *msg, unsigned int length, const int sfd, const int outf
         size_t nbBytes=10;
         char *reply=malloc(nbBytes);
         pkt_encode(pktAck, reply, &nbBytes);
-        //printf("write is about to end this man's whole career\n");
         size_t wrote = send(sfd, reply, nbBytes, MSG_CONFIRM);
-        //printf("Send ack N°%d\n", curSeqnum);
-        //printf("Did we do it ?");
         pkt_del(pkt);
         free(reply);
     } else {
+        fprintf(stderr, "numero inattendu reçu : %d, était attendu %d\n", pkt_get_seqnum(pkt), curSeqnum);
         int tmp=pkt_get_seqnum(pkt)-curSeqnum;
         if (tmp<0) tmp+=256;
         if (tmp>MAX_WINDOW_SIZE) return;

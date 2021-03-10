@@ -280,7 +280,7 @@ int main() {
     const char content[]= {0x5c, 0x00, 0x0b, 0x7b, 0x17, 0x00, 0x00, 0x00, 0x4e, 0xa0, 0x77, 0xdb, 0x68, 0x65, 0x6c, 0x6c,
                      0x6f, 0x20, 0x77, 0x6f, 0x72, 0x6c, 0x64, 0x0d, 0x4a, 0x11, 0x85};
     char next[27]={0};
-      *5c ->first 00 0b->length 7b ->seq  17 00 00 00->timestamp(pas converti en local) 4e a0 77 db->crc1 68 65 6c 6c
+     * *5c ->first 00 0b->length 7b ->seq  17 00 00 00->timestamp(pas converti en local) 4e a0 77 db->crc1 68 65 6c 6c
      * 6f 20 77 6f 72 6c 64 0d 4a 11 85*
 
     //printf("%x\n", content[0]);

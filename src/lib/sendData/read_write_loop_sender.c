@@ -55,7 +55,7 @@ void read_write_loop_sender(const int sfd, const int input_fd) {
     int sentPkt = 0;
     uint32_t TIMEOUT = 12000;
     uint8_t seqnum = 0;
-    uint8_t startWindow = 0, endWindow = 0;
+    uint8_t startWindow = 0, endWindow = 0; // 1 ?
     uint8_t pktInWindow = 0;
 
     linkedList window = new_list();
@@ -72,6 +72,7 @@ void read_write_loop_sender(const int sfd, const int input_fd) {
     // int waitForAck = FALSE;
     while (1) {
         int pollresp = poll(pfd, 2 , TIMEOUT);
+
         // fprintf(stderr, "POLLRESP >> %d, [STDIN] > %d, [SKT] > %d\n", pollresp, pfd[1].revents, pfd[0].revents);
         if (pollresp == 0) fprintf(stderr, "POLL EXPIRE\n");
         if (pfd[1].revents & POLLIN) {
@@ -86,7 +87,7 @@ void read_write_loop_sender(const int sfd, const int input_fd) {
                     // fprintf(stderr, "SEQNUM ENCODE >> %d\n", seqnum);
                     pkt_set_seqnum(socketPkt, seqnum);
                     pkt_set_length(socketPkt, nb);
-                    pkt_set_timestamp(socketPkt, (uint32_t) clock());
+                    pkt_set_timestamp(socketPkt, (uint32_t) clock()); // (set a la toute fin)
                     pkt_set_payload(socketPkt, payload_buffer, nb);
                     size_t size = (size_t) MAX_PAYLOAD_SIZE + 16;
                     if (pkt_encode(socketPkt, pkt_buffer, &size) != PKT_OK) {fprintf(stderr, "Error while encoding pkt\n"); return; } // encode pkt -> buf
@@ -104,6 +105,8 @@ void read_write_loop_sender(const int sfd, const int input_fd) {
                     // fprintf(stderr, "My supeeeeeeeeeeer number is %d\n", seqnum);
                 } else {
                     if (sendingWindowSize == 0) {fprintf(stderr, "All data has been sent\n"); return; } // all data has been sent
+                    // envoi d'un paquet terminal(data, length=0)
+                    // quand on reçoit le num de seq relatif : le programme est terminé
                 }
             }
             // waitForAck = TRUE;
