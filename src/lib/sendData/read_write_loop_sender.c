@@ -55,7 +55,6 @@ void read_write_loop_sender(const int sfd, const int input_fd) {
     int sentPkt = 0;
     uint32_t TIMEOUT = 12000;
     uint8_t seqnum = 0;
-    uint8_t startWindow = 0, endWindow = 0; // 1 ?
     uint8_t pktInWindow = 0;
 
     linkedList* window = new_list();
@@ -100,10 +99,10 @@ void read_write_loop_sender(const int sfd, const int input_fd) {
                     err=send(sfd, pkt_buffer, size, MSG_CONFIRM);
                     // err = sendto(sfd, pkt_buffer, size, 0, (const struct sockaddr *) &receiver_addr, sizeof(receiver_addr));
                     if (err<0) {fprintf(stderr, "Error while sendting the pkt\n"); return; }
-                    endWindow = (endWindow+1)%31;
                     pktInWindow++;
                     seqnum++;
                     sentPkt++;
+                    // fprintf(stderr, "==>"); print_list(window);
                     // fprintf(stderr, "My supeeeeeeeeeeer number is %d\n", seqnum);
                 } else {
                     if (sendingWindowSize == 0) {fprintf(stderr, "All data has been sent\n"); return; } // all data has been sent
@@ -117,7 +116,7 @@ void read_write_loop_sender(const int sfd, const int input_fd) {
         if (pfd[0].revents & POLLIN) {
             // read(socket) -> write(stdout)
             nb=read(sfd, pkt_buffer, 12);
-
+            socketPkt = pkt_new();
             socketResp = pkt_decode(pkt_buffer, 12, socketPkt);
             if (socketResp == PKT_OK) { // if pkt not ok we just drop it
                 uint8_t i;
@@ -129,16 +128,18 @@ void read_write_loop_sender(const int sfd, const int input_fd) {
                         if (get(window, receive_seqnum, &tmpPtk) == 0) {
                             if (tmpPtk == NULL) {
                                 fprintf(stderr, "WTF BROOOO\n");
-                                print_list(window);
+                                // print_list(window);
                                 fprintf(stderr, "Receive seqnum => %d\n", receive_seqnum);
                             }
-                            if (pkt_get_timestamp(socketPkt) == pkt_get_timestamp(tmpPtk)) {
-                                print_list(window);
-                                fprintf(stderr, "Ack N°%d VALIDE\n", receive_seqnum);
-                                while (pkt_get_seqnum(pop(window)) != receive_seqnum) {startWindow++; pktInWindow--;}
-                                pktInWindow--;
-                                sendingWindowSize = sendingWindowSize == 31 ? 31 : sendingWindowSize+1;
-                            }
+                            // print_list(window);
+                            fprintf(stderr, "Ack N°%d VALIDE\n", receive_seqnum);
+                            while (pkt_get_seqnum(pop(window)) != receive_seqnum) {pktInWindow--;}
+                            pktInWindow--;
+                            // fprintf(stderr, "WINDOW AFTER POP ->"); print_list(window);
+                            sendingWindowSize = sendingWindowSize == 31 ? 31 : sendingWindowSize+1;
+                        } else {
+                            // fprintf(stderr, "ACK ERR : WINDOW ->"); print_list(window);
+                            fprintf(stderr, "%d >>>> \n", pkt_get_seqnum(peek(window)));
                         }
                         break;
                     case 3:
