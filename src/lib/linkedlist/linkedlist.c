@@ -45,16 +45,13 @@ pkt_t* peek(linkedList* list) {
 
 pkt_t* pop(linkedList *list) {
     pkt_t* resp = peek(list);
-    fprintf(stderr, "starting pop\n");
     if (resp != NULL) {
         node* toDel = list->first;
         list->first=list->first->next;
         if (pkt_get_seqnum(toDel->pkt) == pkt_get_seqnum(list->last->pkt)) {
             list->last = NULL;
         }
-        free(toDel);
-        fprintf(stderr, "DEBUG : ");
-        fprintf(stderr, "seqnum -> %d\n", pkt_get_seqnum(resp));
+        // free(toDel);
     }
     return resp;
 }
