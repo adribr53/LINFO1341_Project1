@@ -14,8 +14,6 @@
 #include "../segment/packet_interface.h"
 #include "../linkedlist/linkedlist.h"
 
-#define TRUE 1
-#define FALSE 0
 
 void print_sent_pkt(pkt_t* paket) {
     fprintf(stderr, "=== PAKET SENT ===\n");
@@ -31,6 +29,15 @@ void print_sent_pkt(pkt_t* paket) {
     fprintf(stderr, "=== BRRRRRRR ===\n\n");
 }
 
+int build_pkt(pkt_t* pkt, uint8_t windowSize, uint8_t seqnum, int nb, char* payload) {
+    pkt_set_type(pkt, 1);
+    pkt_set_tr(pkt, 0);
+    pkt_set_window(pkt, windowSize);
+    pkt_set_seqnum(pkt, seqnum);
+    pkt_set_length(pkt, nb);
+    pkt_set_timestamp(pkt, (uint32_t) clock());
+    pkt_set_payload(pkt, payload, nb);
+}
 
 void read_write_loop_sender(const int sfd, const int input_fd) {
     struct pollfd pfd[2];
@@ -53,69 +60,53 @@ void read_write_loop_sender(const int sfd, const int input_fd) {
     int nb;
     int err;
     int sentPkt = 0;
+
     uint32_t TIMEOUT = 12000;
     uint8_t seqnum = 0;
     uint8_t pktInWindow = 0;
 
     linkedList* window = new_list();
-
     uint8_t sendingWindowSize = 1;
 
-    pkt_t *socketPkt = pkt_new();
-    pkt_t *tmpPtk = pkt_new();
-    int socketResp;
-    uint8_t receive_seqnum;
+    pkt_t *socketPkt;
+    pkt_t *tmpPtk;
 
+    int socketResp;
+
+    uint8_t receive_seqnum;
     uint32_t clock_time;
 
-    // int waitForAck = FALSE;
     while (1) {
         int pollresp = poll(pfd, 2 , TIMEOUT);
-
-        // fprintf(stderr, "POLLRESP >> %d, [STDIN] > %d, [SKT] > %d\n", pollresp, pfd[1].revents, pfd[0].revents);
-        if (pollresp == 0) fprintf(stderr, "POLL EXPIRE\n");
         if (pfd[1].revents & POLLIN) {
-            // fprintf(stderr, "Excuse moi but wtf ? \n");
-            // read(stdin) -> write(socket)
+            // Event on input_fd
             if (pktInWindow <= sendingWindowSize) {
                 nb=read(input_fd, payload_buffer, MAX_PAYLOAD_SIZE);
                 if (nb != 0) {
+                    // Build the pkt
                     socketPkt = pkt_new();
-                    pkt_set_type(socketPkt, 1);
-                    pkt_set_tr(socketPkt, 0);
-                    pkt_set_window(socketPkt, sendingWindowSize);
-                    // fprintf(stderr, "SEQNUM ENCODE >> %d\n", seqnum);
-                    pkt_set_seqnum(socketPkt, seqnum);
-                    pkt_set_length(socketPkt, nb);
-                    pkt_set_timestamp(socketPkt, (uint32_t) clock()); // (set a la toute fin)
-                    pkt_set_payload(socketPkt, payload_buffer, nb);
+                    build_pkt(socketPkt, sendingWindowSize, seqnum, nb, payload_buffer);
+                    // Encode the pkt in the buffer
                     size_t size = (size_t) MAX_PAYLOAD_SIZE + 16;
                     if (pkt_encode(socketPkt, pkt_buffer, &size) != PKT_OK) {fprintf(stderr, "Error while encoding pkt\n"); return; } // encode pkt -> buf
-                    // print_sent_pkt(socketPkt);
                     fprintf(stderr, "Paket N°%d has been sent\n", pkt_get_seqnum(socketPkt));
+                    // Add the pkt to the sending window
                     if (add(window, socketPkt) < 0) {fprintf(stderr, "Error with adding in window\n"); return;}
-
-                    // err=write(sfd, pkt_buffer, size); // sendto ???
+                    // Send the pkt
                     err=send(sfd, pkt_buffer, size, MSG_CONFIRM);
-                    // err = sendto(sfd, pkt_buffer, size, 0, (const struct sockaddr *) &receiver_addr, sizeof(receiver_addr));
                     if (err<0) {fprintf(stderr, "Error while sendting the pkt\n"); return; }
+                    // Update variables
                     pktInWindow++;
                     seqnum++;
                     sentPkt++;
-                    // fprintf(stderr, "==>"); print_list(window);
-                    // fprintf(stderr, "My supeeeeeeeeeeer number is %d\n", seqnum);
-                } else {
-                    if (sendingWindowSize == 0) {fprintf(stderr, "All data has been sent\n"); return; } // all data has been sent
-                    // envoi d'un paquet terminal(data, length=0)
-                    // quand on reçoit le num de seq relatif : le programme est terminé
                 }
             }
-            // waitForAck = TRUE;
         }
 
         if (pfd[0].revents & POLLIN) {
-            // read(socket) -> write(stdout)
+            // Event on socket
             nb=read(sfd, pkt_buffer, 12);
+            // Decode the pkt
             socketPkt = pkt_new();
             socketResp = pkt_decode(pkt_buffer, 12, socketPkt);
             if (socketResp == PKT_OK) { // if pkt not ok we just drop it
@@ -124,35 +115,28 @@ void read_write_loop_sender(const int sfd, const int input_fd) {
                 switch ((int) pkt_get_type(socketPkt)) {
                     case 2:
                         // ACK
-                        fprintf(stderr, "ACK N°%d\n", receive_seqnum);
                         if (get(window, receive_seqnum, &tmpPtk) == 0) {
-                            if (tmpPtk == NULL) {
-                                fprintf(stderr, "WTF BROOOO\n");
-                                // print_list(window);
-                                fprintf(stderr, "Receive seqnum => %d\n", receive_seqnum);
-                            }
-                            // print_list(window);
-                            fprintf(stderr, "Ack N°%d VALIDE\n", receive_seqnum);
+                            fprintf(stderr, "Ack N°%d validate\n", receive_seqnum);
+                            // Remove pkt until the receive_seqnum
                             while (pkt_get_seqnum(pop(window)) != receive_seqnum) {pktInWindow--;}
                             pktInWindow--;
-                            // fprintf(stderr, "WINDOW AFTER POP ->"); print_list(window);
+
                             sendingWindowSize = sendingWindowSize == 31 ? 31 : sendingWindowSize+1;
-                        } else {
-                            // fprintf(stderr, "ACK ERR : WINDOW ->"); print_list(window);
-                            fprintf(stderr, "%d >>>> \n", pkt_get_seqnum(peek(window)));
                         }
                         break;
                     case 3:
                         // NACK
-                        sendingWindowSize = sendingWindowSize == 1 ? 1 : sendingWindowSize/2; // Resize sending window
                         if (get(window, receive_seqnum, &tmpPtk) == 0) {
                             pkt_set_timestamp(tmpPtk, (uint32_t) clock());
-                            // resend
+                            // Resend the pkt
                             size_t size = (size_t) MAX_PAYLOAD_SIZE + 16;
                             if (pkt_encode(tmpPtk, pkt_buffer, &size) != PKT_OK) {fprintf(stderr, "Error while encoding pkt NACK\n"); return; } // encode pkt -> buf
                             fprintf(stderr, "Paket N°%d has been resent (NACK resp)\n", pkt_get_seqnum(tmpPtk));
+
                             err=send(sfd, pkt_buffer, size, MSG_CONFIRM);
                             if (err<0) {fprintf(stderr, "Error while resinding pkt NACK\n"); return; }
+
+                            sendingWindowSize = sendingWindowSize == 1 ? 1 : sendingWindowSize/2; // Resize sending window
                         }
                         break;
                 }
@@ -163,11 +147,13 @@ void read_write_loop_sender(const int sfd, const int input_fd) {
         tmpPtk = peek(window);
         if (tmpPtk != NULL) {
             if (pkt_get_timestamp(tmpPtk) + TIMEOUT < clock_time) {
+                // Set new timestamp
                 pkt_set_timestamp(tmpPtk, (uint32_t) clock());
                 // resend
                 size_t size = (size_t) MAX_PAYLOAD_SIZE + 16;
                 if (pkt_encode(tmpPtk, pkt_buffer, &size) != PKT_OK) {fprintf(stderr, "Error while encoding pkt RESEND\n"); return; } // encode pkt -> buf
                 fprintf(stderr, "Paket N°%d has been resent (RESEND)\n", pkt_get_seqnum (tmpPtk));
+
                 err=send(sfd, pkt_buffer, size, MSG_CONFIRM);
                 if (err<0) {fprintf(stderr, "Error while RESEND\n"); return; }
             }
