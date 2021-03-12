@@ -36,30 +36,22 @@ void treatment_pkt(char *msg, unsigned int length, const int sfd, const int outf
     } else if (pkt_get_seqnum(pkt)==curSeqnum) {
         fprintf(stderr, "numero attendu reçu : %d\n", curSeqnum);
         // envoi du paquet recu et de ceux qui seraient dans le buffer
-        write(outfd, pkt_get_payload(pkt), pkt_get_length(pkt));
-        pkt_t *nextPkt=peek(window);
-        if (nextPkt!=NULL && pkt_get_seqnum(nextPkt)==curSeqnum) {
-            pop(window);
-        }
+        add(window, pkt);
         int i=curSeqnum;
-        do {
-            i=(i+1)%256;
+        pkt_t *nextPkt=peek(window);
+        while (nextPkt!=NULL && pkt_get_seqnum(nextPkt)==i)
+        {
+            write(outfd, pkt_get_payload(nextPkt), pkt_get_length(nextPkt));
+            pop(window);
             nextPkt=peek(window);
-            if (nextPkt!=NULL && pkt_get_seqnum(nextPkt)==i) {
-                //printf("I am here to die, write\n");
-                write(outfd, pkt_get_payload(nextPkt), pkt_get_length(nextPkt));
-                //printf("I am here to help, write\n");
-            }
-            else break;
-        } while (1);
-        //printf("I passed\n");
+            i=(i+1)%256;
+        }
         // envoi de l'ack
         pkt_t *pktAck=pkt_new();
         pkt_set_type(pktAck, PTYPE_ACK);
         pkt_set_tr(pktAck, 0);
         pkt_set_window(pktAck, MAX_WINDOW_SIZE);
         curSeqnum=i;
-        if (i<0) curSeqnum+=256;
         pkt_set_seqnum(pktAck, seqnum_to_ack(curSeqnum)); // i sert d'ack pour tous les paquets envoyés
         pkt_set_length(pktAck, 0);
         pkt_set_timestamp(pktAck, pkt_get_timestamp(pkt));
