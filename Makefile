@@ -7,11 +7,11 @@ CFLAGS += -c -std=gnu99 -Wall -Werror -Wextra -O2
 CFLAGS += -D_COLOR
 
 # You may want to add something here
-LDFLAGS +=
+LDFLAGS += "-lz"
 
 # Adapt these as you want to fit with your project
-SENDER_SOURCES = $(wildcard src/sender.c src/log.c)
-RECEIVER_SOURCES = $(wildcard src/receiver.c src/log.c)
+SENDER_SOURCES = $(wildcard src/sender.c src/log.c src/lib/sendData/real_address.c src/lib/sendData/create_socket.c src/lib/sendData/read_write_loop_sender.c src/lib/segment/packet_implem.c src/lib/linkedlist/linkedlist.c)
+RECEIVER_SOURCES = $(wildcard src/receiver.c src/log.c src/lib/sendData/create_socket.c src/lib/sendData/wait_for_client.c src/lib/sendData/real_address.c src/lib/sendData/read_write_loop_server_v2.c src/lib/segment/packet_implem.c src/lib/sortedLinkedList/sortedLinkedList.c)
 
 SENDER_OBJECTS = $(SENDER_SOURCES:.c=.o)
 RECEIVER_OBJECTS = $(RECEIVER_SOURCES:.c=.o)

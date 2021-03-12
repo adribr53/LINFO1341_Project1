@@ -37,6 +37,7 @@ int build_pkt(pkt_t* pkt, uint8_t windowSize, uint8_t seqnum, int nb, char* payl
     pkt_set_length(pkt, nb);
     pkt_set_timestamp(pkt, (uint32_t) clock());
     pkt_set_payload(pkt, payload, nb);
+    return 0;
 }
 
 void read_write_loop_sender(const int sfd, const int input_fd) {
@@ -57,7 +58,7 @@ void read_write_loop_sender(const int sfd, const int input_fd) {
 
     char payload_buffer[MAX_PAYLOAD_SIZE];
     char pkt_buffer[MAX_PAYLOAD_SIZE+16];
-    int nb;
+    int nb = 0;
     int err;
     int sentPkt = 0;
 
@@ -78,6 +79,7 @@ void read_write_loop_sender(const int sfd, const int input_fd) {
 
     while (1) {
         int pollresp = poll(pfd, 2 , TIMEOUT);
+        if (pollresp == -1) {fprintf(stderr, "Error while poll\n"); return;}
         if (pfd[1].revents & POLLIN) {
             // Event on input_fd
             if (pktInWindow <= sendingWindowSize) {
@@ -89,7 +91,8 @@ void read_write_loop_sender(const int sfd, const int input_fd) {
                     // Encode the pkt in the buffer
                     size_t size = (size_t) MAX_PAYLOAD_SIZE + 16;
                     if (pkt_encode(socketPkt, pkt_buffer, &size) != PKT_OK) {fprintf(stderr, "Error while encoding pkt\n"); return; } // encode pkt -> buf
-                    fprintf(stderr, "Paket N°%d has been sent\n", pkt_get_seqnum(socketPkt));
+                    fprintf(stderr, "===================== Paket N°%d has been sent =====================\n", pkt_get_seqnum(socketPkt));
+                    fprintf(stdout, "===================== Paket N°%d has been sent =====================\n", pkt_get_seqnum(socketPkt));
                     // Add the pkt to the sending window
                     if (add(window, socketPkt) < 0) {fprintf(stderr, "Error with adding in window\n"); return;}
                     // Send the pkt
@@ -110,17 +113,20 @@ void read_write_loop_sender(const int sfd, const int input_fd) {
             socketPkt = pkt_new();
             socketResp = pkt_decode(pkt_buffer, 12, socketPkt);
             if (socketResp == PKT_OK) { // if pkt not ok we just drop it
-                uint8_t i;
                 receive_seqnum = pkt_get_seqnum(socketPkt);
                 switch ((int) pkt_get_type(socketPkt)) {
                     case 2:
                         // ACK
                         if (get(window, receive_seqnum, &tmpPtk) == 0) {
-                            fprintf(stderr, "Ack N°%d validate\n", receive_seqnum);
+                            fprintf(stderr, "===================== Ack N°%d validate =====================\n", receive_seqnum);
+                            fprintf(stdout, "===================== Ack N°%d validate =====================\n", receive_seqnum);
                             // Remove pkt until the receive_seqnum
                             while (pkt_get_seqnum(pop(window)) != receive_seqnum) {pktInWindow--;}
                             pktInWindow--;
                             sendingWindowSize = sendingWindowSize == 31 ? 31 : sendingWindowSize+1;
+                        } else {
+                            fprintf(stderr, "Bad ack received => %d\n", receive_seqnum);
+                            fprintf(stdout, "Bad ack received => %d\n", receive_seqnum);
                         }
                         break;
                     case 3:
@@ -131,6 +137,7 @@ void read_write_loop_sender(const int sfd, const int input_fd) {
                             size_t size = (size_t) MAX_PAYLOAD_SIZE + 16;
                             if (pkt_encode(tmpPtk, pkt_buffer, &size) != PKT_OK) {fprintf(stderr, "Error while encoding pkt NACK\n"); return; } // encode pkt -> buf
                             fprintf(stderr, "Paket N°%d has been resent (NACK resp)\n", pkt_get_seqnum(tmpPtk));
+                            fprintf(stdout, "Paket N°%d has been resent (NACK resp)\n", pkt_get_seqnum(tmpPtk));
 
                             err=send(sfd, pkt_buffer, size, MSG_CONFIRM);
                             if (err<0) {fprintf(stderr, "Error while resinding pkt NACK\n"); return; }
@@ -153,7 +160,8 @@ void read_write_loop_sender(const int sfd, const int input_fd) {
                     // resend
                     size_t size = (size_t) MAX_PAYLOAD_SIZE + 16;
                     if (pkt_encode(tmpPtk, pkt_buffer, &size) != PKT_OK) {fprintf(stderr, "Error while encoding pkt RESEND\n"); return; } // encode pkt -> buf
-                    fprintf(stderr, "Paket N°%d has been resent (RESEND)\n", pkt_get_seqnum (tmpPtk));
+                    fprintf(stderr, "Paket N°%d has been resent (RESEND) [last good was %d]\n", pkt_get_seqnum (tmpPtk), seqnum-1);
+                    fprintf(stdout, "Paket N°%d has been resent (RESEND) [last good was %d]\n", pkt_get_seqnum (tmpPtk), seqnum-1);
 
                     err=send(sfd, pkt_buffer, size, MSG_CONFIRM);
                     if (err<0) {fprintf(stderr, "Error while RESEND\n"); return; }

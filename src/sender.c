@@ -97,7 +97,6 @@ int main(int argc, char **argv) {
         ERROR("Error while creating socket\n");
         return EXIT_FAILURE;
     }
-    int cond = 1;
     printf("ln0=0\n");
     printf("infile fd : %d\n", infile_fd);
     read_write_loop_sender(sfd, infile_fd);
