@@ -83,8 +83,12 @@ int add(list_t *list, pkt_t *packet) {
             newNode->next_t = curr->next_t;
             curr->next_t = newNode;
         }
-    }
+    }/*
     fprintf(stderr, "add finished\n");
+<<<<<<< HEAD
+=======
+    printList(list);*/
+>>>>>>> 480e46ee03e650173bf25a374ea7720b9c58b72f
     return 0;
 }
 
