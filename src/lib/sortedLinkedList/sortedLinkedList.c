@@ -85,7 +85,6 @@ int add(list_t *list, pkt_t *packet) {
         }
     }
     fprintf(stderr, "add finished\n");
-    printList(list);
     return 0;
 }
 
@@ -126,3 +125,37 @@ int is_empty(list_t *list) {
 
 
 
+/*int main() {
+    list_t *list=new_list();
+
+    pkt_t *test0=pkt_new();
+    pkt_set_seqnum(test0, 0);
+    add(list, test0);
+
+    pkt_t *test5=pkt_new();
+    pkt_set_seqnum(test5, 5);
+    add(list, test5);
+
+    pkt_t *test3=pkt_new();
+    pkt_set_seqnum(test3, 3);
+    add(list, test3);
+
+    pkt_t *test6=pkt_new();
+    pkt_set_seqnum(test6, 6);
+    add(list, test6);
+
+    pkt_t *test4=pkt_new();
+    pkt_set_seqnum(test4, 4);
+    add(list, test4);
+
+    pkt_t *test1=pkt_new();
+    pkt_set_seqnum(test1, 1);
+    add(list, test1);
+
+    while (peek(list)!=NULL) {
+        printf("%d\n", pkt_get_seqnum(pop(list)));
+    }
+
+
+
+}*/
