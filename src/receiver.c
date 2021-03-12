@@ -7,7 +7,7 @@
 #include "./lib/sendData/real_address.h"
 #include "./lib/sendData/create_socket.h"
 #include "./lib/sendData/wait_for_client.h"
-#include "./lib/sendData/read_write_loop_server.h"
+#include "./lib/sendData/read_write_loop_server_v2.h"
 
 int sock;
 
@@ -59,7 +59,7 @@ int main(int argc, char **argv) {
             return print_usage(argv[0]);
         }
     }
-
+    if (stats_filename != NULL) fprintf(stderr, "COUCOU\n");
     if (optind + 2 != argc) {
         ERROR("Unexpected number of positional arguments");
         return print_usage(argv[0]);
