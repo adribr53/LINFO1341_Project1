@@ -42,6 +42,20 @@ int cmp(pkt_t *p1, pkt_t *p2) { // p1 > p2 => true
 int pkt_equal(pkt_t* p1, pkt_t* p2) {
     return pkt_get_seqnum(p1) == pkt_get_seqnum(p2);
 }
+
+
+void printList(list_t *list) {
+    node_t *cur=list->first_t;
+    int i=0;
+    while (cur!=NULL) {
+        fprintf(stderr, "num de séq de l'élément current %d\n", pkt_get_seqnum(cur->packet_t));
+        cur=cur->next_t;
+        i++;
+    }
+    fprintf(stderr, "taille : %d\n", i);
+}
+
+
 /*
  * @pre : list is a pointer to a struct list
  *        value is an unsigned long long
@@ -70,6 +84,8 @@ int add(list_t *list, pkt_t *packet) {
             curr->next_t = newNode;
         }
     }
+    fprintf(stderr, "add finished\n");
+    printList(list);
     return 0;
 }
 
