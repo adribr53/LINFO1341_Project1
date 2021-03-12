@@ -91,6 +91,17 @@ void read_write_loop_server(const int sfd, const int outfd) {
                                 }
                                 pkt_del(ack_pkt);
                             }
+                        } else {
+                            // Resend last ack pkt
+                            pkt_t* ack_pkt = pkt_new();
+                            build_ack(ack_pkt, pkt, waitedSeqnum-1);
+                            pkt_encode(ack_pkt, buffer, &ack_size);
+                            nb = send(sfd, buffer, ack_size, MSG_CONFIRM);
+                            if (nb == 0) {
+                                fprintf(stderr, "Error while resending ACK\n");
+                                return;
+                            }
+                            pkt_del(ack_pkt);
                         }
                     }
                 }
