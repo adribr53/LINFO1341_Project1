@@ -76,6 +76,8 @@ void read_write_loop_sender(const int sfd, const int input_fd) {
 
     uint8_t receive_seqnum;
     uint32_t clock_time;
+    
+    int rtSupport=0;
 
     while (1) {
         int pollresp = poll(pfd, 2 , TIMEOUT);
@@ -145,6 +147,11 @@ void read_write_loop_sender(const int sfd, const int input_fd) {
                             sendingWindowSize = sendingWindowSize == 1 ? 1 : sendingWindowSize/2; // Resize sending window
                         }
                         break;
+                }
+                rtSupport++;
+                if (rtSupport==30) {
+                    TIMEOUT=(((uint32_t)clock())-pkt_get_timestamp(socketPkt))*2;
+                    rtSupport=0;
                 }
             }
         }
