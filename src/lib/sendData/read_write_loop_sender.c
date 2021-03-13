@@ -79,8 +79,6 @@ void read_write_loop_sender(const int sfd, const int input_fd) {
     
     int rtSupport=0;
 
-    int rtSupport=0;
-
     while (1) {
         int pollresp = poll(pfd, 2 , TIMEOUT);
         if (pollresp == -1) {fprintf(stderr, "Error while poll\n"); return;}
