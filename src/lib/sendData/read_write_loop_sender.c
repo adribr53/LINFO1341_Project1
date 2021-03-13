@@ -76,6 +76,8 @@ void read_write_loop_sender(const int sfd, const int input_fd) {
 
     uint8_t receive_seqnum;
     uint32_t clock_time;
+    
+    int rtSupport=0;
 
     int rtSupport=0;
 
@@ -161,7 +163,10 @@ void read_write_loop_sender(const int sfd, const int input_fd) {
                     TIMEOUT=(((uint32_t)clock())-pkt_get_timestamp(socketPkt))*2;
                     rtSupport=0;
                 }
+<<<<<<< HEAD
 
+=======
+>>>>>>> 3d2b3f1b8ea0cb29eceb0f691e48777430bdbed3
             }
         }
         // Check RT
