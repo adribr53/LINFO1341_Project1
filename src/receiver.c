@@ -24,17 +24,19 @@ int connection_to_sender(char* listen_ip, uint16_t listen_port) {
         fprintf(stderr, "Adress unrecognized, error message : %s\n", err);
         return 1;
     }
-
+    fprintf(stderr, "real adresse\n");
     sock = create_socket(&addressSock, listen_port, NULL, -1);
     if (sock < 0) {
         fprintf(stderr, "Error during the execution of create_socket()");
         return 1;
     }
+    fprintf(stderr, "socket créé\n");
 
     if (wait_for_client(sock)==-1) {
         fprintf(stderr, "Error during the execution of wait_for_client()");
         return 1;
     }
+    fprintf(stderr, "client passed\n");
 
     return 0;
 }
@@ -66,7 +68,7 @@ int main(int argc, char **argv) {
     }
 
     listen_ip = argv[optind];
-    listen_port = (uint16_t) strtol(argv[optind + 1], &listen_port_err, 10);
+    listen_port = htons((uint16_t) strtol(argv[optind + 1], &listen_port_err, 10));
     if (*listen_port_err != '\0') {
         ERROR("Receiver port parameter is not a number");
         return print_usage(argv[0]);
@@ -81,14 +83,17 @@ int main(int argc, char **argv) {
 
     DEBUG("You can only see me if %s", "you built me using `make debug`");
     //ERROR("This is not an error, %s", "now let's code!");
-
+    fprintf(stderr, "Bonjour tous\n");
     // Now let's code!
     if (connection_to_sender(listen_ip, listen_port)!=0) {
         fprintf(stdout, "Error during the execution of connection_to_sender");
         return EXIT_FAILURE;
     }
+    fprintf(stderr, "Alors me revoilà assez vite, tous\n");
+
     // printf("first\n");
     read_write_loop_server(sock, 1);
+    fprintf(stderr, "Alors me revoilà assez tard, tous\n");
 
     return EXIT_SUCCESS;
 }

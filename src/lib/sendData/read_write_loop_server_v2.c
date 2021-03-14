@@ -21,10 +21,6 @@ int in_window(uint8_t waited, uint8_t received) {
 
 }
 
-int seqnum_to_ack(uint8_t waited) {
-    return (waited==0) ? 255 : waited-1;
-}
-
 int build_ack(pkt_t* pkt, uint32_t timestamp, uint8_t seqnum) {
     //fprintf(stderr, "ack sent of num %d\n", seqnum);
     pkt_set_type(pkt, PTYPE_ACK);
@@ -50,22 +46,27 @@ void read_write_loop_server(const int sfd, const int outfd) {
     uint64_t receivePkt = 0;
     pkt_t *pkt=pkt_new();
     while (1) {
-        poll(&sfdPoll, 1 , -1);
+        int isRunning=poll(&sfdPoll, 1 , 5000);
+        if (!isRunning) {
+            fprintf(stderr, "it'over\n");
+            return;
+        }
         if (sfdPoll.revents && POLLIN) {
             //fprintf(stderr, "still in it\n");
             nb=recv(sfd, data_buffer, MAX_PAYLOAD_SIZE+16, 0);
-            if (nb==0) return;
+            //if (nb==0) return;
             // Decode pkt
+            //fprintf(stderr, "Guillaume m'a écrit \n");
             if (pkt_decode(data_buffer, nb, pkt) == PKT_OK) {
                 if (pkt_get_seqnum(pkt) == waitedSeqnum) {
                     //fprintf(stderr, "seqnum waited arrived : %d ", waitedSeqnum);
                     // parse window
                     int oldSeqnum=waitedSeqnum;
                     nb=write(outfd, pkt_get_payload(pkt), pkt_get_length(pkt));
-                    if (nb == 0) {
+                    /*if (nb == 0) {
                         //fprintf(stderr, "Error while writing in outfile\n");
                         return;
-                    } 
+                    }*/
                     uint32_t timestampAck=pkt_get_timestamp(pkt);
                     waitedSeqnum=(waitedSeqnum+1)%256;
                     receivePkt=1;
@@ -79,10 +80,10 @@ void read_write_loop_server(const int sfd, const int outfd) {
                         //fprintf(stderr, "Window parcourue\n");
                         //fprintf(stderr, "seqnum : %d\n", pkt_get_seqnum(peek(window)));
                         nb=write(outfd, peek(window)->payload, peek(window)->length);
-                        if (nb==0) {
+                        /*if (nb==0) {
                             fprintf(stderr, "Error while writing in outfile\n"); 
                             return;
-                        }
+                        }*/
                         //fprintf(stderr, "about to be popped : %d\n", peek(window)->seqnum);
                         timestampAck=peek(window)->timestamp;
                         pop(window);
@@ -96,7 +97,7 @@ void read_write_loop_server(const int sfd, const int outfd) {
 
                     // Send ack
                     pkt_t* ack_pkt = pkt_new();
-                    build_ack(ack_pkt, timestampAck, seqnum_to_ack(waitedSeqnum));
+                    build_ack(ack_pkt, timestampAck, waitedSeqnum);
                     pkt_encode(ack_pkt, buffer, &ack_size);
                     nb = send(sfd, buffer, ack_size, MSG_CONFIRM);
                     if (nb == 0) {
@@ -115,7 +116,7 @@ void read_write_loop_server(const int sfd, const int outfd) {
                     if (receivePkt != 0) {
                         // Resend last ack pkt
                         pkt_t* ack_pkt = pkt_new();
-                        build_ack(ack_pkt, pkt_get_timestamp(pkt), waitedSeqnum-1);
+                        build_ack(ack_pkt, pkt_get_timestamp(pkt), waitedSeqnum);
                         pkt_encode(ack_pkt, buffer, &ack_size);
                         nb = send(sfd, buffer, ack_size, MSG_CONFIRM);
                         if (nb == 0) {

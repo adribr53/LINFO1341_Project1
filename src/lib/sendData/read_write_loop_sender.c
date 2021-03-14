@@ -62,7 +62,7 @@ void read_write_loop_sender(const int sfd, const int input_fd) {
     int err;
     int sentPkt = 0; // booleen
 
-    uint32_t TIMEOUT = 120000;
+    uint32_t TIMEOUT = 12000;
     uint8_t seqnum = 0;
     uint8_t pktInWindow = 0;
 
@@ -121,7 +121,9 @@ void read_write_loop_sender(const int sfd, const int input_fd) {
             socketPkt = pkt_new();
             socketResp = pkt_decode(pkt_buffer, 12, socketPkt);
             if (socketResp == PKT_OK) { // if pkt not ok we just drop it
+                fprintf(stderr, "ack received\n");
                 receive_seqnum = pkt_get_seqnum(socketPkt);
+                receive_seqnum = (receive_seqnum==0) ? 255 : receive_seqnum-1;
                 switch ((int) pkt_get_type(socketPkt)) {
                     case 2:
                         // ACK
@@ -178,12 +180,16 @@ void read_write_loop_sender(const int sfd, const int input_fd) {
                     //fprintf(stderr, "Paket N°%d has been resent (RESEND) [last good was %d]\n", pkt_get_seqnum (tmpPtk), seqnum-1);
                     //fprintf(stdout, "Paket N°%d has been resent (RESEND) [last good was %d]\n", pkt_get_seqnum (tmpPtk), seqnum-1);
                     err=send(sfd, pkt_buffer, size, MSG_CONFIRM);
-                    if (err<0) {fprintf(stderr, "Error while RESEND\n"); return; }
+                    if (err<0) {
+                        fprintf(stderr, "what\n");
+                        fprintf(stderr, "Error while RESEND\n");                         
+                    }
+                    fprintf(stderr, "cc : %d\n", pkt_get_seqnum(tmpPtk));
+		            //fprintf("did not end\n);
                 }
                 receive_seqnum++;
             }
         }
-
         if (nb == 0 && pktInWindow == 0) {
             fprintf(stderr, "ALL PKT SENT (%d)\n", sentPkt);
             return;
