@@ -1,0 +1,6 @@
+*.o
+*sender
+*receiver
+*.mp4
+*.mp3
+*.stat
