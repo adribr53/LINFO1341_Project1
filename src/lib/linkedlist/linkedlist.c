@@ -30,17 +30,14 @@ int add(linkedList *list, pkt_t *packet) {
 }
 
 pkt_t* peek(linkedList* list) {
-    printf("%d\n", list->ptrPop);
-    printf("size %d\n", list->size);
     if (list->size!=0) {
         return list->window[list->ptrPop];
     }    
-    printf("aled\n");
     return NULL;
 }
 
 int pop(linkedList *list) {
-    free(list->window[list->ptrPop]);
+    pkt_del(list->window[list->ptrPop]);
     list->window[list->ptrPop]=NULL;
     list->ptrPop=(1+list->ptrPop)%MAX_WINDOW_SIZE;
     list->size--;
@@ -54,12 +51,9 @@ int is_empty(linkedList *list) {
 int is_higher_or_equal(int seqnum, linkedList *list) {
     // si l'ack est plus haut, on peut supprimer l'élément actuel. Pour savoir ça, on utilise is_higher() 
     if (is_empty(list)) return 0;
-    printf("first\n");
     pkt_t *ref=peek(list);
-    printf("second\n");
     if (ref==NULL) printf("whut\n");
     uint8_t refSeqnum=pkt_get_seqnum(ref);
-    printf("mid\n");
     if (seqnum<refSeqnum && refSeqnum-seqnum>100) { 
         return 1; // seqnum ---------------- refSeqnum
     }
