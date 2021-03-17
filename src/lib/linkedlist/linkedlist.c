@@ -15,81 +15,176 @@
  */
 linkedList *new_list() {
     linkedList *toR =(linkedList *) malloc(sizeof(linkedList));
+    toR->size=0;
+    toR->ptrAdd=0;
+    toR->ptrPop=0;
     return toR;
 }
 
-node* new_node(pkt_t* pkt) {
-    node* resp = (node *) malloc(sizeof(node));
-    if (resp != NULL) resp->pkt=pkt;
-    return resp;
-}
-
 int add(linkedList *list, pkt_t *packet) {
-    if (packet == NULL) fprintf(stderr, "GOD PLEASE NOOO\n");
-    node* newNode = new_node(packet);
-    if (newNode == NULL) return -1;
-    if (list->last == NULL) {
-        list->first=newNode;
-        list->last=newNode;
-    } else {
-        list->last->next=newNode;
-        list->last=newNode;
-    }
+    if (packet==NULL) fprintf(stderr, "GOD PLEASE NOOO\n");
+    list->window[list->ptrAdd]=packet;
+    list->ptrAdd=(list->ptrAdd+1)%MAX_WINDOW_SIZE;
+    list->size++;
     return 0;
 }
 
 pkt_t* peek(linkedList* list) {
-    if (list->first != NULL) return list->first->pkt;
+    printf("%d\n", list->ptrPop);
+    printf("size %d\n", list->size);
+    if (list->size!=0) {
+        return list->window[list->ptrPop];
+    }    
+    printf("aled\n");
     return NULL;
 }
 
-pkt_t* pop(linkedList *list) {
-    pkt_t* resp = peek(list);
-    if (resp != NULL) {
-        node* toDel = list->first;
-        list->first=list->first->next;
-        if (pkt_get_seqnum(toDel->pkt) == pkt_get_seqnum(list->last->pkt)) {
-            list->last = NULL;
-        }
-        // free(toDel);
-    }
-    return resp;
+int pop(linkedList *list) {
+    free(list->window[list->ptrPop]);
+    list->window[list->ptrPop]=NULL;
+    list->ptrPop=(1+list->ptrPop)%MAX_WINDOW_SIZE;
+    list->size--;
+    return 0;
 }
 
 int is_empty(linkedList *list) {
-    return list->first == NULL;
+    return list->size==0;
 }
 
-int get(linkedList *list, int seqnum, pkt_t** resp) {
-    if (is_empty(list)) return -1;
-    node* curr = list->first;
-    while (curr != NULL) {
-        if (pkt_get_seqnum(curr->pkt) == seqnum) {
-            *resp = curr->pkt;
+int is_higher_or_equal(int seqnum, linkedList *list) {
+    // si l'ack est plus haut, on peut supprimer l'élément actuel. Pour savoir ça, on utilise is_higher() 
+    if (is_empty(list)) return 0;
+    printf("first\n");
+    pkt_t *ref=peek(list);
+    printf("second\n");
+    if (ref==NULL) printf("whut\n");
+    uint8_t refSeqnum=pkt_get_seqnum(ref);
+    printf("mid\n");
+    if (seqnum<refSeqnum && refSeqnum-seqnum>100) { 
+        return 1; // seqnum ---------------- refSeqnum
+    }
+    if (refSeqnum<seqnum && seqnum-refSeqnum>100) {
+        return 0; // refSeqnum ---------------- seqnum
+    }
+    return seqnum>=refSeqnum;
+
+}
+
+int get(linkedList *list, uint8_t receive_seqnum, pkt_t **tmpPtk, int *supportIt)  {
+    uint8_t index= (*supportIt==-1) ? list->ptrPop : *supportIt;  
+    
+    int firstTime=1;
+    while (list->window[index]!=NULL && pkt_get_seqnum(list->window[index])!=receive_seqnum)
+    {
+        if (!firstTime && index==list->ptrPop) {
             return 0;
         }
-        curr=curr->next;
+        firstTime=0;
+        index=(index+1)%MAX_WINDOW_SIZE;
     }
-    return -2;
-}
-
-void print_list(linkedList* list) {
-    fprintf(stderr, "[");
-    node* curr = list->first;
-    node* last = list->last;
-    while (curr != NULL) {
-        fprintf(stderr, " %d", pkt_get_seqnum(curr->pkt));
-        curr=curr->next;
+    if (list->window[index]==NULL) {
+        return 0;
     }
-    fprintf(stderr, " ]");
-    if (last == NULL) fprintf(stderr, "\tLast == NULL\n");
-    else fprintf(stderr, "\t last : %d\n", pkt_get_seqnum(last->pkt));
+    *tmpPtk=list->window[index];
+    *supportIt=(index+1)%MAX_WINDOW_SIZE;
+    return 1;
 }
 
-void freeNode(node* n) {
-    free(n);
+void print_seqnums(linkedList *list) {
+    fprintf(stderr, "[ ");
+    for (int i=0; i<MAX_WINDOW_SIZE; i++) {
+        if (list->window[i]!=NULL) {
+            fprintf(stderr, "%d ", pkt_get_seqnum(list->window[i]));
+        }
+        else {
+            fprintf(stderr, "nul ");
+        }
+    }
+    fprintf(stderr, " ]\n");
 }
 
-void freeList(linkedList * list) {
+/*int main() {
+    linkedList *list=new_list();
+
+    pkt_t *test0=pkt_new();
+    pkt_set_seqnum(test0, 0);
+    pkt_set_payload(test0, "br0", 3);
+    add(list, test0);
+    print_seqnums(list);
+
+    pkt_t *test5=pkt_new();
+    pkt_set_seqnum(test5, 1);
+    pkt_set_payload(test5, "br1\n", 3);
+    add(list, test5);
+    print_seqnums(list);
+    
+
+    pkt_t *test3=pkt_new();
+    pkt_set_seqnum(test3, 2);
+    pkt_set_payload(test3, "br2\n", 3); 
+    add(list, test3);
+    print_seqnums(list);
+
+
+    pkt_t *test6=pkt_new();
+    pkt_set_seqnum(test6, 3);
+    pkt_set_payload(test6, "br3\n", 3);
+    add(list, test6);
+    print_seqnums(list);
+
+
+    pkt_t *test4=pkt_new();
+    pkt_set_seqnum(test4, 4);
+    pkt_set_payload(test4, "br4\n", 3);
+    add(list, test4);
+    print_seqnums(list);
+
+
+    pkt_t *test1=pkt_new();
+    pkt_set_seqnum(test1, 5);
+    pkt_set_payload(test1, "br5\n", 3);
+    add(list, test1);
+    print_seqnums(list);
+    printf("second part\n");
+    while (is_higher_or_equal(3, list))
+    {
+        printf("this is our chance\n");
+        pop(list);
+        
+    }
+    print_seqnums(list);
+
+    pkt_t *testbr=pkt_new();
+    pkt_set_seqnum(test0, 6);
+    pkt_set_payload(test0, "br0", 6);
+    add(list, test0);
+    print_seqnums(list);
+
+    pkt_t *testbrr=pkt_new();
+    pkt_set_seqnum(test5, 7);
+    pkt_set_payload(test5, "br1\n", 7);
+    add(list, test5);
+    print_seqnums(list);
+    printf("Let's do it, now !\n");
+
+    int *supportInt=malloc(sizeof(int));
+    *supportInt=-1; // outil pour itérer
+    pkt_t *tmpPtk = peek(list);
+    uint8_t receive_seqnum = pkt_get_seqnum(tmpPtk);
+    *supportInt=-1; // outil pour itérer
+    while (get(list, receive_seqnum, &tmpPtk, supportInt)) {
+            // Set new timestamp
+        pkt_set_timestamp(tmpPtk, (uint32_t) 3);
+        printf("%d and %d\n", pkt_get_seqnum(tmpPtk), pkt_get_timestamp(tmpPtk));
+            // resend    
+        receive_seqnum=(receive_seqnum+1)%MAX_WINDOW_SIZE;
+    }
+
+    print_seqnums(list);
+    
+
+
     free(list);
-}
+
+
+}*/

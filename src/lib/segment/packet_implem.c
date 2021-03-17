@@ -84,6 +84,7 @@ pkt_status_code pkt_decode(const char *data, const size_t len, pkt_t *pkt)
     uint32_t crc1= (uint32_t) crc32(0L, Z_NULL, 0);
     crc1 = crc32(crc1, header, lengthHeader);
     if (crc1!=pkt_get_crc1(pkt)) return E_CRC;
+    pkt_set_tr(pkt, prevTr);
     if (pkt->tr==0) {
         if (pkt->length>0) {
             memcpy(pkt->payload, data+10+inc, pkt->length);

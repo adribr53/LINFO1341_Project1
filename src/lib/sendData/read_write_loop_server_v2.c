@@ -21,9 +21,13 @@ int in_window(uint8_t waited, uint8_t received) {
 
 }
 
-int build_ack(pkt_t* pkt, uint32_t timestamp, uint8_t seqnum) {
+int seqnum_to_ack(uint8_t waited) {
+    return waited; // to remove, definitely
+}
+
+int build_ack(pkt_t* pkt, uint32_t timestamp, uint8_t seqnum, ptypes_t type) {
     //fprintf(stderr, "ack sent of num %d\n", seqnum);
-    pkt_set_type(pkt, PTYPE_ACK);
+    pkt_set_type(pkt, type);
     pkt_set_tr(pkt, 0);
     pkt_set_window(pkt, MAX_WINDOW_SIZE);
     pkt_set_seqnum(pkt, seqnum);
@@ -48,25 +52,39 @@ void read_write_loop_server(const int sfd, const int outfd) {
     while (1) {
         int isRunning=poll(&sfdPoll, 1 , 5000);
         if (!isRunning) {
-            fprintf(stderr, "it'over\n");
+            fprintf(stderr, "receiver terminates\n");
             return;
         }
         if (sfdPoll.revents && POLLIN) {
             //fprintf(stderr, "still in it\n");
             nb=recv(sfd, data_buffer, MAX_PAYLOAD_SIZE+16, 0);
-            //if (nb==0) return;
+            if (nb==0) return;
             // Decode pkt
-            //fprintf(stderr, "Guillaume m'a écrit \n");
             if (pkt_decode(data_buffer, nb, pkt) == PKT_OK) {
-                if (pkt_get_seqnum(pkt) == waitedSeqnum) {
-                    //fprintf(stderr, "seqnum waited arrived : %d ", waitedSeqnum);
+                if (pkt_get_tr(pkt)==1) {
+                    pkt_t* ack_pkt = pkt_new();
+                    build_ack(ack_pkt, pkt_get_timestamp(pkt), seqnum_to_ack(waitedSeqnum), PTYPE_NACK);
+                    pkt_encode(ack_pkt, buffer, &ack_size);
+                    nb = send(sfd, buffer, ack_size, MSG_CONFIRM);
+                    if (nb == 0) {
+                        fprintf(stderr, "Error while resending ACK\n");
+                        return;
+                    }
+                    pkt_del(ack_pkt);
+                }
+                else if (pkt_get_seqnum(pkt) == waitedSeqnum) {
+                    if (pkt_get_length(pkt)==0 && pkt_get_type(pkt)==PTYPE_DATA) {
+                        fprintf(stderr, "receiver terminates, due to a message\n");
+                        return;
+                    }
+                    fprintf(stderr, "seqnum waited arrived : %d \n", waitedSeqnum);
                     // parse window
                     int oldSeqnum=waitedSeqnum;
                     nb=write(outfd, pkt_get_payload(pkt), pkt_get_length(pkt));
-                    /*if (nb == 0) {
+                    if (nb == 0) {
                         //fprintf(stderr, "Error while writing in outfile\n");
                         return;
-                    }*/
+                    } 
                     uint32_t timestampAck=pkt_get_timestamp(pkt);
                     waitedSeqnum=(waitedSeqnum+1)%256;
                     receivePkt=1;
@@ -80,10 +98,10 @@ void read_write_loop_server(const int sfd, const int outfd) {
                         //fprintf(stderr, "Window parcourue\n");
                         //fprintf(stderr, "seqnum : %d\n", pkt_get_seqnum(peek(window)));
                         nb=write(outfd, peek(window)->payload, peek(window)->length);
-                        /*if (nb==0) {
+                        if (nb==0) {
                             fprintf(stderr, "Error while writing in outfile\n"); 
                             return;
-                        }*/
+                        }
                         //fprintf(stderr, "about to be popped : %d\n", peek(window)->seqnum);
                         timestampAck=peek(window)->timestamp;
                         pop(window);
@@ -97,7 +115,7 @@ void read_write_loop_server(const int sfd, const int outfd) {
 
                     // Send ack
                     pkt_t* ack_pkt = pkt_new();
-                    build_ack(ack_pkt, timestampAck, waitedSeqnum);
+                    build_ack(ack_pkt, timestampAck, seqnum_to_ack(waitedSeqnum), PTYPE_ACK);
                     pkt_encode(ack_pkt, buffer, &ack_size);
                     nb = send(sfd, buffer, ack_size, MSG_CONFIRM);
                     if (nb == 0) {
@@ -106,17 +124,18 @@ void read_write_loop_server(const int sfd, const int outfd) {
                     }
                     pkt_del(ack_pkt);
                 } else { // Unwaited seqnum
+                    fprintf(stderr, "seqnum waited : %d\n", waitedSeqnum);
                     if (in_window(waitedSeqnum, pkt_get_seqnum(pkt))) {
                         // Add pkt to the received window
                         // fprintf(stderr, "packet added to window\n");
                         //fprintf(stderr, "seqnum added : %d\n", pkt_get_seqnum(pkt));
                         add(window, pkt, waitedSeqnum);
                     } 
-                    //fprintf(stderr, "new reçue pour ce seqnum HORS SEQ: %d\n", pkt_get_seqnum(pkt));
+                    fprintf(stderr, "new reçue pour ce seqnum HORS SEQ: %d\n", pkt_get_seqnum(pkt));
                     if (receivePkt != 0) {
                         // Resend last ack pkt
                         pkt_t* ack_pkt = pkt_new();
-                        build_ack(ack_pkt, pkt_get_timestamp(pkt), waitedSeqnum);
+                        build_ack(ack_pkt, pkt_get_timestamp(pkt), seqnum_to_ack(waitedSeqnum), PTYPE_ACK);
                         pkt_encode(ack_pkt, buffer, &ack_size);
                         nb = send(sfd, buffer, ack_size, MSG_CONFIRM);
                         if (nb == 0) {
