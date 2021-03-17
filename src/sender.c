@@ -21,7 +21,6 @@ int print_usage(char *prog_name) {
 }
 
 int main(int argc, char **argv) {
-    printf("COUCOU\n");
     int opt;
 
     char *filename = NULL;
@@ -77,7 +76,6 @@ int main(int argc, char **argv) {
             return EXIT_FAILURE;
         }
     }
-    printf("COUCOU\n");
 
     DEBUG("You can only see me if %s", "you built me using `make debug`");
     // ERROR("This is not an error, %s", "now let's code!");
@@ -90,18 +88,14 @@ int main(int argc, char **argv) {
         ERROR("Error with the address");
         return EXIT_FAILURE;
     }
-    printf("ln0=0\n");
 
     int sfd = create_socket(NULL, -1, &receiver_addr, receiver_port);
     if (sfd < 0) {
         ERROR("Error while creating socket\n");
         return EXIT_FAILURE;
     }
-    printf("ln0=0\n");
-    printf("infile fd : %d\n", infile_fd);
+    // Loop (Selective Repeat & close when finished)
     read_write_loop_sender(sfd, infile_fd);
-
-    // Close()
 
     return EXIT_SUCCESS;
 }

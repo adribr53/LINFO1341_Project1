@@ -14,22 +14,15 @@
 #include "../segment/packet_interface.h"
 #include "../linkedlist/linkedlist.h"
 
-
-void print_sent_pkt(pkt_t* paket) {
-    fprintf(stderr, "=== PAKET SENT ===\n");
-    fprintf(stderr, "type => %d\n", pkt_get_type(paket));
-    fprintf(stderr, "TR => %d\n", pkt_get_tr(paket));
-    fprintf(stderr, "WINDOW => %d\n", pkt_get_window(paket));
-    fprintf(stderr, "Length => %d\n", pkt_get_length(paket));
-    fprintf(stderr, "Seqnum => %d\n", pkt_get_seqnum(paket));
-    fprintf(stderr, "timestamp => %d\n", pkt_get_timestamp(paket));
-    fprintf(stderr, "crc1 => %d\n", pkt_get_crc1(paket));
-    fprintf(stderr, "Payload => %s\n", pkt_get_payload(paket));
-    fprintf(stderr, "crc2 => %d\n", pkt_get_crc2(paket));
-    fprintf(stderr, "=== BRRRRRRR ===\n\n");
-}
-
-int build_pkt(pkt_t* pkt, uint8_t windowSize, uint8_t seqnum, int nb, char* payload) {
+/*
+ * Build a pkt
+ * pkt: buffer where the pake will be written
+ * windowSize : current size of the window
+ * seqnum : sequence number of the pkt
+ * nb : lenght of the payload (max 512)
+ * payload : buffer to put on the payload of the paket (should have a size of nb)
+ */
+void build_pkt(pkt_t* pkt, uint8_t windowSize, uint8_t seqnum, int nb, char* payload) {
     pkt_set_type(pkt, 1);
     pkt_set_tr(pkt, 0);
     pkt_set_window(pkt, windowSize);
@@ -37,10 +30,17 @@ int build_pkt(pkt_t* pkt, uint8_t windowSize, uint8_t seqnum, int nb, char* payl
     pkt_set_length(pkt, nb);
     pkt_set_timestamp(pkt, (uint32_t) clock());
     pkt_set_payload(pkt, payload, nb);
-    return 0;
 }
 
+/*
+ * Sending lopp
+ * sfd : the socket file descriptor
+ * input_fd : the input file
+ */
 void read_write_loop_sender(const int sfd, const int input_fd) {
+    
+    // Init variables
+
     struct pollfd pfd[2];
     // 0 => socket
     // 1 => sender input
@@ -81,6 +81,7 @@ void read_write_loop_sender(const int sfd, const int input_fd) {
     int *supportInt=malloc(sizeof(int));
     *supportInt=-1;
 
+    // Starting loop
     while (1) {
         int pollresp = poll(pfd, 2 , TIMEOUT);
         if (pollresp == -1) {fprintf(stderr, "Error while poll\n"); return;}
@@ -129,6 +130,8 @@ void read_write_loop_sender(const int sfd, const int input_fd) {
                     case 2:
                         // ACK
                         fprintf(stderr, "ack : %d\n", receive_seqnum);
+
+                        // Remove all validate ack (if first sent is 1 and receive ack is 3 -> 1, 2 and 3 are ack)
                         while (is_higher_or_equal(receive_seqnum, window))
                         {
                             pop(window);
@@ -154,11 +157,6 @@ void read_write_loop_sender(const int sfd, const int input_fd) {
                         }
                         break;
                 }
-                /*rtSupport++;
-                if (rtSupport==30) {
-                    TIMEOUT=(((uint32_t)clock())-pkt_get_timestamp(socketPkt))*2;
-                    rtSupport=0;
-                }*/
             }
         }
         // Check RT
@@ -197,6 +195,7 @@ void read_write_loop_sender(const int sfd, const int input_fd) {
         }
 
         if (nb == 0 && pktInWindow == 0) {
+            // Send pkt with empty payload to close the receiver (if lost the receiver will automaticly stop with a timeout)
             socketPkt = pkt_new();
             build_pkt(socketPkt, 0, seqnum, 0, payload_buffer); // payload_buffer not null, and unused
             // Encode the pkt in the buffer
@@ -213,6 +212,11 @@ void read_write_loop_sender(const int sfd, const int input_fd) {
             pkt_del(socketPkt);
             fprintf(stderr, "sender terminates\n");
             fprintf(stderr, "ALL PKT SENT (%d)\n", sentPkt);
+            // Free struc
+            del_list(window);
+            if (socketPkt != NULL) pkt_del(socketPkt);
+            if (tmpPtk != NULL) pkt_del(tmpPtk);
+            free(supportInt);
             return;
         }
     }

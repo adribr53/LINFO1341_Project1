@@ -25,6 +25,10 @@ list_t *new_list() {
     return toR;
 }
 
+void del_list(list_t *list) {
+    free(list);
+}
+
 
 /*
  * @pre : list is a pointer to a struct list
