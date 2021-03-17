@@ -87,12 +87,13 @@ void read_write_loop_sender(const int sfd, const int input_fd) {
         if (pollresp == -1) {fprintf(stderr, "Error while poll\n"); return;}
         if (pfd[1].revents & POLLIN) {
             // Event on input_fd
+            // last ack received + window size
             if (pktInWindow < sendingWindowSize) {
                 nb=read(input_fd, payload_buffer, MAX_PAYLOAD_SIZE);
                 if (nb != 0) {
                     // Build the pkt
                     socketPkt = pkt_new();
-                    build_pkt(socketPkt, sendingWindowSize, seqnum, nb, payload_buffer);
+                    build_pkt(socketPkt, sendingWindowSize-pktInWindow, seqnum, nb, payload_buffer);
                     // Encode the pkt in the buffer
                     size_t size = (size_t) MAX_PAYLOAD_SIZE + 16;
                     if (pkt_encode(socketPkt, pkt_buffer, &size) != PKT_OK) {
@@ -113,6 +114,7 @@ void read_write_loop_sender(const int sfd, const int input_fd) {
                     pktInWindow++;
                     seqnum=(seqnum+1)%256; // prochain numero de sequence
                     sentPkt=1;
+                    pkt_del(socketPkt);
                 }
             }
         }
@@ -137,7 +139,8 @@ void read_write_loop_sender(const int sfd, const int input_fd) {
                             pop(window);
                             pktInWindow--;
                         }
-                        sendingWindowSize = sendingWindowSize == 31 ? 31 : sendingWindowSize+1;                       
+                        //sendingWindowSize = sendingWindowSize == 31 ? 31 : sendingWindowSize+1;                       
+                        sendingWindowSize=pkt_get_window(socketPkt);
                         break;
                     case 3:
                         // NACK
@@ -154,9 +157,10 @@ void read_write_loop_sender(const int sfd, const int input_fd) {
                             if (err<0) {fprintf(stderr, "Error while resinding pkt NACK\n"); return; }
 
                             sendingWindowSize = sendingWindowSize == 1 ? 1 : sendingWindowSize/2; // Resize sending window
-                        }
+                        }                    
                         break;
                 }
+                pkt_del(socketPkt);
             }
         }
         // Check RT
@@ -197,7 +201,7 @@ void read_write_loop_sender(const int sfd, const int input_fd) {
         if (nb == 0 && pktInWindow == 0) {
             // Send pkt with empty payload to close the receiver (if lost the receiver will automaticly stop with a timeout)
             socketPkt = pkt_new();
-            build_pkt(socketPkt, 0, seqnum, 0, payload_buffer); // payload_buffer not null, and unused
+            build_pkt(socketPkt, sendingWindowSize, seqnum, 0, payload_buffer); // payload_buffer not null, and unused
             // Encode the pkt in the buffer
             size_t size = (size_t) MAX_PAYLOAD_SIZE + 16;
             if (pkt_encode(socketPkt, pkt_buffer, &size) != PKT_OK) {

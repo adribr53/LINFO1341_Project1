@@ -1,0 +1,36 @@
+==17343== Memcheck, a memory error detector
+==17343== Copyright (C) 2002-2017, and GNU GPL'd, by Julian Seward et al.
+==17343== Using Valgrind-3.15.0 and LibVEX; rerun with -h for copyright info
+==17343== Command: ./receiver :: 64341
+==17343== Parent PID: 1417
+==17343== 
+==17343== Conditional jump or move depends on uninitialised value(s)
+==17343==    at 0x10A93A: add (in /home/adrien/Documents/LINFO1341_Project1/receiver)
+==17343==    by 0x109D61: read_write_loop_server (in /home/adrien/Documents/LINFO1341_Project1/receiver)
+==17343==    by 0x109402: main (in /home/adrien/Documents/LINFO1341_Project1/receiver)
+==17343== 
+==17343== Conditional jump or move depends on uninitialised value(s)
+==17343==    at 0x10AA0D: peek (in /home/adrien/Documents/LINFO1341_Project1/receiver)
+==17343==    by 0x109DE9: read_write_loop_server (in /home/adrien/Documents/LINFO1341_Project1/receiver)
+==17343==    by 0x109402: main (in /home/adrien/Documents/LINFO1341_Project1/receiver)
+==17343== 
+==17343== Conditional jump or move depends on uninitialised value(s)
+==17343==    at 0x10AA25: peek (in /home/adrien/Documents/LINFO1341_Project1/receiver)
+==17343==    by 0x109DE9: read_write_loop_server (in /home/adrien/Documents/LINFO1341_Project1/receiver)
+==17343==    by 0x109402: main (in /home/adrien/Documents/LINFO1341_Project1/receiver)
+==17343== 
+==17343== Conditional jump or move depends on uninitialised value(s)
+==17343==    at 0x10AAD6: reset (in /home/adrien/Documents/LINFO1341_Project1/receiver)
+==17343==    by 0x109E88: read_write_loop_server (in /home/adrien/Documents/LINFO1341_Project1/receiver)
+==17343==    by 0x109402: main (in /home/adrien/Documents/LINFO1341_Project1/receiver)
+==17343== 
+==17343== 
+==17343== HEAP SUMMARY:
+==17343==     in use at exit: 0 bytes in 0 blocks
+==17343==   total heap usage: 1,001 allocs, 1,001 frees, 527,612 bytes allocated
+==17343== 
+==17343== All heap blocks were freed -- no leaks are possible
+==17343== 
+==17343== Use --track-origins=yes to see where uninitialised values come from
+==17343== For lists of detected and suppressed errors, rerun with: -s
+==17343== ERROR SUMMARY: 26 errors from 4 contexts (suppressed: 0 from 0)
