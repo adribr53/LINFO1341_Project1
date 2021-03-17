@@ -21,6 +21,16 @@ linkedList *new_list() {
     return toR;
 }
 
+
+void del_list(linkedList *list) {
+    free(list);
+}
+
+/*
+ * Add pkt to list
+ * list : the list (prev init with new_list)
+ * packet : ptr to the pkt to add (should not be null)
+ */
 int add(linkedList *list, pkt_t *packet) {
     if (packet==NULL) fprintf(stderr, "GOD PLEASE NOOO\n");
     list->window[list->ptrAdd]=packet;
@@ -29,16 +39,22 @@ int add(linkedList *list, pkt_t *packet) {
     return 0;
 }
 
+
+/*
+ * Return the first elem of the list without remove it
+ * list : the list (prev init with new_list)
+ */
 pkt_t* peek(linkedList* list) {
-    printf("%d\n", list->ptrPop);
-    printf("size %d\n", list->size);
     if (list->size!=0) {
         return list->window[list->ptrPop];
     }    
-    printf("aled\n");
     return NULL;
 }
 
+/*
+ * Remove the first elem of the list
+ * list : the list (prev init with new_list)
+ */
 int pop(linkedList *list) {
     free(list->window[list->ptrPop]);
     list->window[list->ptrPop]=NULL;
@@ -47,19 +63,25 @@ int pop(linkedList *list) {
     return 0;
 }
 
+/*
+ * Return true if the list is empty
+ * list : the list (prev init with new_list)
+ */
 int is_empty(linkedList *list) {
     return list->size==0;
 }
 
+/*
+ * Return if the seqnum is greater or equal to the smallest element of the list
+ * seqnum : seqnum to evaluate
+ * list : the list (prev init with new_list)
+ */
 int is_higher_or_equal(int seqnum, linkedList *list) {
     // si l'ack est plus haut, on peut supprimer l'élément actuel. Pour savoir ça, on utilise is_higher() 
     if (is_empty(list)) return 0;
-    printf("first\n");
     pkt_t *ref=peek(list);
-    printf("second\n");
     if (ref==NULL) printf("whut\n");
     uint8_t refSeqnum=pkt_get_seqnum(ref);
-    printf("mid\n");
     if (seqnum<refSeqnum && refSeqnum-seqnum>100) { 
         return 1; // seqnum ---------------- refSeqnum
     }
@@ -70,6 +92,12 @@ int is_higher_or_equal(int seqnum, linkedList *list) {
 
 }
 
+/*
+ * get the packet with a specific seqnum
+ * list : the list (prev init with new_list)
+ * receive_seqnum : seqnum to get
+ * tmpPtk : on return will be pointed to the getted pkt
+ */
 int get(linkedList *list, uint8_t receive_seqnum, pkt_t **tmpPtk, int *supportIt)  {
     uint8_t index= (*supportIt==-1) ? list->ptrPop : *supportIt;  
     

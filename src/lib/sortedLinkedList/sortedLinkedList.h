@@ -16,6 +16,7 @@ typedef struct list {
 
 int ind(uint8_t toPlace, uint8_t waited);
 list_t *new_list();
+void del_list(list_t *list);  
 int add(list_t *list, pkt_t *packet, uint8_t waited);
 pst_t *peek(list_t* list);
 int pop(list_t *list);

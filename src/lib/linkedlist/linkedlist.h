@@ -15,6 +15,7 @@ typedef struct list {
 } linkedList;
 
 linkedList *new_list();
+void del_list(linkedList *list);
 int add(linkedList *list, pkt_t *packet);
 pkt_t *peek(linkedList* list);
 int pop(linkedList *list);
