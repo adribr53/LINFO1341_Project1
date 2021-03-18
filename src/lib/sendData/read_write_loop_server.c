@@ -25,7 +25,6 @@ int cmp_seqnum(uint8_t s1, uint8_t s2) {
 void treatment_pkt(char *msg, unsigned int length, const int sfd, const int outfd) {
     pkt_t *pkt=pkt_new();
     if (pkt_decode(msg, length, pkt)!=PKT_OK || pkt_get_tr(pkt)==1) {
-        fprintf(stderr, "packet corrompu\n");
         pkt_t *pktAck=pkt_new();
         pkt_set_type(pktAck, PTYPE_NACK);
         pkt_set_tr(pktAck, 0);
@@ -40,10 +39,8 @@ void treatment_pkt(char *msg, unsigned int length, const int sfd, const int outf
         pkt_del(pkt);
         return;
     } else if (pkt_get_seqnum(pkt)==curSeqnum) {
-        fprintf(stderr, "numero attendu reçu : %d\n", curSeqnum);
         // envoi du paquet recu et de ceux qui seraient dans le buffer
         write(outfd, pkt_get_payload(pkt), pkt_get_length(pkt));
-        fprintf(stderr, "%d seqnum WRITTEN\n", pkt_get_seqnum(pkt));
         nbPkWrt++;
         int i=(curSeqnum+1)%256;
         pkt_t *nextPkt=peek(window);
@@ -55,7 +52,6 @@ void treatment_pkt(char *msg, unsigned int length, const int sfd, const int outf
         {
             write(outfd, pkt_get_payload(nextPkt), pkt_get_length(nextPkt));
             nbPkWrt++;
-            fprintf(stderr, "from window %d seqnum WRITTEN\n", pkt_get_seqnum(nextPkt));
             pop(window);
             nextPkt=peek(window);
             i=(i+1)%256;
@@ -76,12 +72,8 @@ void treatment_pkt(char *msg, unsigned int length, const int sfd, const int outf
         pkt_del(pkt);
         free(reply);
     } else {
-        fprintf(stderr, "numero inattendu reçu : %d, était attendu %d\n", pkt_get_seqnum(pkt), curSeqnum);
         if (cmp_seqnum(curSeqnum, pkt_get_seqnum(pkt))==0) {
-            fprintf(stderr, "it's an add\n");
             add(window, pkt);
-            printf("Now let's print this shit \n");
-
         }
         // send ack
         pkt_t *pktAck=pkt_new();
@@ -102,8 +94,6 @@ void treatment_pkt(char *msg, unsigned int length, const int sfd, const int outf
             nbOutSeq=0;
         }*/
     }
-    fprintf(stderr, "nbPacketWritten %lul\n", nbPkWrt);
-    fprintf(stderr, "\n\n");
 }
 
 
@@ -116,7 +106,6 @@ void read_write_loop_server(const int sfd, const int outfd) {
     char buf[MAX_PAYLOAD_SIZE+16];
     int nb;
     while (1) {
-        // printf("=========LOOP===========\n");
         poll(&sfdPoll, 1 , -1);
         if (sfdPoll.revents & POLLIN) {
             //read(socket) -> write(stdout) ou send(socket)

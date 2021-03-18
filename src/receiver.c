@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <stdint.h>
+#include <string.h> 
 
 #include "log.h"
 #include "./lib/sendData/real_address.h"
@@ -66,6 +67,10 @@ int main(int argc, char **argv) {
     }
 
     listen_ip = argv[optind];
+    if (strcmp("localhost", listen_ip)==0) {
+        strcpy(listen_ip, "::");
+    }
+
     listen_port = (uint16_t) strtol(argv[optind + 1], &listen_port_err, 10);
     if (*listen_port_err != '\0') {
         ERROR("Receiver port parameter is not a number");

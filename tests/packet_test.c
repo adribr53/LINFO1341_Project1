@@ -9,12 +9,10 @@
 #include <unistd.h>
 
 int setup() {
-    system("gcc -Wall -Werror -o packet_test ../src/lib/segment/packet_implement.c -lz");
     return  0;
 }
 
 int teardown() {
-    system("rm packet_test"); 
     return 0;
 }
 
@@ -37,9 +35,6 @@ void test_encode_decode() {
     CU_ASSERT_EQUAL(PKT_OK ,pkt_encode(testPkt, forDecode, (size_t *) len))
     
     for (int i=0; i<27; i++) { // 
-        printf("to Encode : %d\n", i);
-        printf("%d\n", toEncode[i]);
-        printf("%d\n", forDecode[i]);
         CU_ASSERT_EQUAL(toEncode[i], forDecode[i]);       
     }
     free(len);
