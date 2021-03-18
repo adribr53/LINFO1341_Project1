@@ -19,9 +19,23 @@ RECEIVER_OBJECTS = $(RECEIVER_SOURCES:.c=.o)
 SENDER = sender
 RECEIVER = receiver
 
+<<<<<<< HEAD
 all: $(SENDER) $(RECEIVER)
 
 $(SENDER): $(SENDER_OBJECTS)
+=======
+all: $(SENDER) $(RECEIVER) sim_link ## Build Sender and Receiver with all dependencies
+
+# ====================================================Help============================================================
+# code found here : https://marmelab.com/blog/2016/02/29/auto-documented-makefile.html
+
+help:
+	@grep -E '(^[a-zA-Z_-]+:.*?##.*$$)|(^##)' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[32m%-20s\033[0m %s\n", $$1, $$2}' | sed -e 's/\[32m##/[33m/'
+
+# ====================================================================================================================
+
+$(SENDER): $(SENDER_OBJECTS) ## Build Sender compiled files and dependencies
+>>>>>>> 39137c38088770d3dc48519cd31ae46ab0960676
 	$(CC) $(SENDER_OBJECTS) -o $@ $(LDFLAGS)
 
 $(RECEIVER): $(RECEIVER_OBJECTS)
