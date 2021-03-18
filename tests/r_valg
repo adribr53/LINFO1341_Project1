@@ -1,0 +1,15 @@
+==7958== Memcheck, a memory error detector
+==7958== Copyright (C) 2002-2017, and GNU GPL'd, by Julian Seward et al.
+==7958== Using Valgrind-3.15.0 and LibVEX; rerun with -h for copyright info
+==7958== Command: ../receiver :: 2456
+==7958== Parent PID: 7954
+==7958== 
+==7958== 
+==7958== HEAP SUMMARY:
+==7958==     in use at exit: 0 bytes in 0 blocks
+==7958==   total heap usage: 775 allocs, 775 frees, 408,476 bytes allocated
+==7958== 
+==7958== All heap blocks were freed -- no leaks are possible
+==7958== 
+==7958== For lists of detected and suppressed errors, rerun with: -s
+==7958== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)

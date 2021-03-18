@@ -51,7 +51,7 @@ void read_write_loop_server(const int sfd, const int outfd) {
     pkt_t *pkt=pkt_new(); // TODO: free
     
     while (1) {
-        int isRunning=poll(&sfdPoll, 1 , 5000);
+        int isRunning=poll(&sfdPoll, 1 , 3000);
         if (isRunning == 0) { // Timeout
             fprintf(stderr, "receiver terminates\n");
             del_list(window);

@@ -1,19 +1,43 @@
-# My Wonderful LINFO1341 Project
+# LINFO1341 Project - Giot Adrien & Gaudin Félix
 
-The very first thing you might want to do in this folder is the following command:
+## How to run it ?
+
+There is a Makefile at the root of the projet.
 ```bash
-git init
+make (all) # Build Sender and Receiver with all dependencies
+
+make clean # Remove all compilled file
+
+make tests # Launch our tests
+
+make zip # Generate zip and log file
+
+make help # Show help for makefile
 ```
 
-This will initialize your Git repository.
-You should also put it in a **private** repository (GitHub, GitLab, Bitbucket,... it is up to you but it **has to** stay private).
+## Ressources used for this project
+* [Stackoverflow](https://stackoverflow.com/)
+* [Man pages](https://man7.org/linux/man-pages/)
+* [The syllabus](https://beta.computer-networking.info/syllabus/default/index.html)
 
-The Makefile contains all the required targets, but you might want to extend their behavior.
+## Dependencies
+*All dependencies path is relative to src file*
+### Sender
+* log.h 
+* lib/sendData/real_address.h
+* lib/sendData/create_socket.h
+* lib/sendData/read_write_loop_sender.h (main core of the sender)
+* lib/segment/packet_interface.h
+* lib/queue/queue.h
 
-Very basic skelettons of receiver and sender source files are present, have a look to understand how you can enable logging or not.
+### Receiver
+* log.h
+* lib/sendData/real_address.h
+* lib/sendData/create_socket.h
+* lib/sendData/wait_for_client.h
+* lib/sendData/read_write_loop_server_v2.h (main core of the receiver)
+* lib/segment/packet_interface.h
+* lib/sortedLinkedList/sortedLinkedList.h
 
-A very simple test case is present, you probably want to update it.
-
-You might be interested in the link simulator that can be found at https://github.com/cnp3/Linksimulator
-
-And finally, if this message is still there at your final submission, it looks like you forgot to provide a proper README.
+## Special thanks
+![My cat](https://media.discordapp.net/attachments/669931364149100554/795971633105600522/124042033_362655141621936_584480919917219971_n.jpg?width=250&height=250)
