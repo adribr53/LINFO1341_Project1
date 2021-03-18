@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "../segment/packet_interface.h"
-#include "sortedLinkedList.h"
+#include "sortedList.h"
 #include "string.h"
 
 int ind(uint8_t toPlace, uint8_t waited) {

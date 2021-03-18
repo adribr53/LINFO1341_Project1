@@ -4,12 +4,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include "../src/lib/segment/packet_interface.h"
-#include "../src/lib/linkedlist/linkedlist.h"
+#include "../src/lib/queue/queue.h"
 #include <sys/time.h>
 #include <time.h>
 #include <unistd.h>
 
-linkedList *list;
+queue *list;
 int setup(){
     list=new_list();
     return  0;
@@ -68,7 +68,7 @@ void test_case() {
     // ACK 3 received
     int i=1;
     while (is_higher_or_equal(3, list)) {
-        pop(list);
+        dequeue(list);
         CU_ASSERT_EQUAL(i++, pkt_get_seqnum(peek(list)));
     }
     CU_ASSERT_EQUAL(2, list->size);
@@ -77,7 +77,7 @@ void test_case() {
     // part of rw_loop_sender.c : window unchanged despite an ack
     // ACK 3 received, again
     while (is_higher_or_equal(3, list)) {
-        pop(list);
+        dequeue(list);
         CU_ASSERT_EQUAL(i++, pkt_get_seqnum(peek(list)));
     }
     CU_ASSERT_EQUAL(2, list->size);
@@ -95,7 +95,7 @@ void test_case() {
     }
     CU_ASSERT_EQUAL(4, pkt_get_seqnum(peek(list)));
     while (is_higher_or_equal(3, list)) {
-        pop(list);
+        dequeue(list);
         CU_ASSERT_EQUAL(i++, pkt_get_seqnum(peek(list)));
     }
     CU_ASSERT_EQUAL(2, list->size);
@@ -108,7 +108,7 @@ void test_case() {
     while (is_higher_or_equal(5, list))
     {
         CU_ASSERT_EQUAL(i++, pkt_get_seqnum(peek(list)));
-        pop(list);
+        dequeue(list);
     }
     
 }

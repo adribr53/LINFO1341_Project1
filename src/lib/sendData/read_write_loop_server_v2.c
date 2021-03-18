@@ -9,7 +9,7 @@
 #include "read_write_loop_server.h"
 #include "../segment/packet_interface.h"
 #include <sys/socket.h>
-#include "../sortedLinkedList/sortedLinkedList.h"
+#include "../sortedList/sortedList.h"
 
 #define ACK_PKT_SIZE 10
 
@@ -132,12 +132,10 @@ void read_write_loop_server(const int sfd, const int outfd) {
                     pkt_del(ack_pkt);
                 } else { 
                     // Unwaited seqnum
-                    fprintf(stderr, "seqnum waited : %d\n", waitedSeqnum);
                     if (in_window(waitedSeqnum, pkt_get_seqnum(pkt))) {
                         // Store in window
                         add(window, pkt, waitedSeqnum);
                     } 
-                    fprintf(stderr, "new reçue pour ce seqnum HORS SEQ: %d\n", pkt_get_seqnum(pkt));
                     if (receivePkt != 0) {
                         // Resend last ack pkt
                         pkt_t* ack_pkt = pkt_new();
