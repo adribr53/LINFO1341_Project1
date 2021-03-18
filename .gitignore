@@ -6,3 +6,8 @@
 *.stat
 *.pdf
 *.txt
+
+valgrindReceiver
+valgrindSender
+testpog.txt
+link_sim
