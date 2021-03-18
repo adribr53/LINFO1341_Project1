@@ -83,8 +83,8 @@ void read_write_loop_server(const int sfd, const int outfd) {
                         // Disconnect received
                         fprintf(stderr, "receiver terminates, due to a message\n");
                         // Free
-                        if (pkt != NULL) pkt_del(pkt);
                         del_list(window);
+                        if (pkt != NULL) pkt_del(pkt);
                         return;
                     }
                     fprintf(stderr, "seqnum waited arrived : %d \n", waitedSeqnum);
@@ -104,8 +104,8 @@ void read_write_loop_server(const int sfd, const int outfd) {
                             // disconnect
                             fprintf(stderr, "Receiver terminates");
                             // Free
-                            if (pkt != NULL) pkt_del(pkt);    
                             del_list(window);
+                            if (pkt != NULL) pkt_del(pkt);    
                             return;
                         }
                         nb=write(outfd, peek(window)->payload, peek(window)->length);

@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <stdint.h>
-#include <string.h> 
+#include <string.h>
 
 #include "log.h"
 #include "./lib/sendData/real_address.h"
@@ -68,6 +68,7 @@ int main(int argc, char **argv) {
 
     listen_ip = argv[optind];
     if (strcmp("localhost", listen_ip)==0) {
+        fprintf(stderr, "test local");
         strcpy(listen_ip, "::");
     }
 

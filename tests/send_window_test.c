@@ -22,7 +22,6 @@ int teardown() {
 
 void test_case() {
     // ADD PACKETS
-    printf("sill 1\n");
     pkt_t *test0=pkt_new();
     pkt_set_seqnum(test0, 0);
     pkt_set_payload(test0, "br0", 3);
@@ -74,7 +73,7 @@ void test_case() {
     }
     CU_ASSERT_EQUAL(2, list->size);
     CU_ASSERT_EQUAL(4, pkt_get_seqnum(peek(list)));
-
+    printf("bonjour\n");
     // part of rw_loop_sender.c : window unchanged despite an ack
     // ACK 3 received, again
     while (is_higher_or_equal(3, list)) {
@@ -83,7 +82,7 @@ void test_case() {
     }
     CU_ASSERT_EQUAL(2, list->size);
     CU_ASSERT_EQUAL(4, pkt_get_seqnum(peek(list)));
-    printf("sill alive\n");
+    
     // part of rw_loop_sender.c : iterate over the window to resend some packets, according to the rtt
     int *supportInt=malloc(sizeof(int));
     *supportInt=-1; // outil pour itérer
@@ -115,7 +114,6 @@ void test_case() {
 }
 
 int main(int argc, char const *argv[]) {
-    printf("aled\n");
     if (CUE_SUCCESS != CU_initialize_registry()) return CU_get_error();
     CU_pSuite pSuite = NULL;
     pSuite = CU_add_suite("Suite", setup, teardown);    

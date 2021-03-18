@@ -1,5 +1,0 @@
-#!/usr/bin/env bash
-
-./receiver :: 64341 1>test.txt 2>recv.log &
-./link_sim -p 64342 -P 64341 -l 10 -d 50 -s 37909724617 2>link.log&
-./sender -f $1 ::1 64342 2>send.log &

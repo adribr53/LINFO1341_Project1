@@ -54,5 +54,7 @@ ZIP_NAME="../projet1_gaudin_giot.zip"
 # A zip target, to help you have a proper zip file. You probably need to adapt this code.
 zip:
 	# Generate the log file stat now. Try to keep the repository clean.
-	zip -r $(ZIP_NAME) Makefile src/lib/linkedlist/linkedlist.c src/lib/linkedlist/linkedlist.h src/lib/sortedLinkedList/sortedLinkedList.c src/lib/sortedLinkedList/sortedLinkedList.h src/lib/sendData/read_write_loop_server_v2.c src/lib/sendData/read_write_loop_server_v2.h src/lib/sendData/create_socket.c src/lib/sendData/create_socket.h tests src/lib/packet_implem.c src/lib/segment/packet_interface.h rapport.pdf gitlog.stat
+	# git log --stat > gitlog.stat
+	zip -r $(ZIP_NAME) Makefile src tests rapport.pdf gitlog.stat
 	# We remove it now, but you can leave it if you want.
+	# rm gitlog.stat

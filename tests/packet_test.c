@@ -34,7 +34,7 @@ void test_encode_decode() {
     *len=27;
     CU_ASSERT_EQUAL(PKT_OK ,pkt_encode(testPkt, forDecode, (size_t *) len))
     
-    for (int i=0; i<27; i++) { // 
+    for (int i=0; i<27; i++) { //         
         CU_ASSERT_EQUAL(toEncode[i], forDecode[i]);       
     }
     free(len);

@@ -86,7 +86,7 @@ int main(int argc, char **argv) {
     if (strcmp("localhost", receiver_ip)==0) {
         fprintf(stderr, "I'am the danger, Skyler\n");
         strcpy(receiver_ip, "::1");
-    }    
+    }
     struct sockaddr_in6 receiver_addr;
     if (real_address(receiver_ip, &receiver_addr) != NULL) {
         ERROR("Error with the address");

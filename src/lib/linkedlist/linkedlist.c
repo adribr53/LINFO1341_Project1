@@ -87,8 +87,9 @@ int is_higher_or_equal(int seqnum, linkedList *list) {
     }
     if (refSeqnum<seqnum && seqnum-refSeqnum>100) {
         return 0; // refSeqnum ---------------- seqnum
-    }    
+    }
     return seqnum>=refSeqnum;
+
 }
 
 /*

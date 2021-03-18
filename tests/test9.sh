@@ -1,15 +1,15 @@
 #!/bin/bash
 
 # cleanup d'un test précédent
-rm -f ./tests/received_file ./tests/input_file
+rm -f received_file input_file
 # Fichier au contenu aléatoire de 512 octets
 dd if=/dev/urandom of=input_file bs=1 count=50000 &> /dev/null
 
-./link_sim -p 1341 -P 2456 -e 70 -c 10 -R  &> ./tests/link.log &
+../link_sim -p 1341 -P 2456 -R  &> link.log &
 link_pid=$!
 
 # On lance le receiver et capture sa sortie standard
-./receiver :: 2456 1>received_file 2> ./tests/recv.log &
+valgrind --log-file=r_valg ../receiver :: 2456 1>received_file 2> recv.log &
 receiver_pid=$!
 
 cleanup()
@@ -21,9 +21,9 @@ cleanup()
 trap cleanup SIGINT  # Kill les process en arrière plan en cas de ^-C
 
 # On démarre le transfert
-if ! ./sender -f ./tests/input_file ::1 1341 2>./tests/send.log ; then
+if ! valgrind --log-file=s_valg ../sender -f input_file ::1 1341 2>send.log ; then
   echo "Crash du sender!" 
-  cat ./tests/send.log
+  cat send.log
   err=1  # On enregistre l'erreur
 fi
 
@@ -36,7 +36,7 @@ if kill -0 $receiver_pid &> /dev/null ; then
 else  # On teste la valeur de retour du receiver
   if ! wait $receiver_pid ; then
     echo "Crash du receiver!"
-    cat ./tests/receiver.log
+    cat receiver.log
     err=1
   fi
 fi
