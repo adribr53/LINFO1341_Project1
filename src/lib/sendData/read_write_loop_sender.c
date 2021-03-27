@@ -230,7 +230,7 @@ void read_write_loop_sender(const int sfd, const int input_fd, FILE* stats_file)
                     size_t size = (size_t) MAX_PAYLOAD_SIZE + 16;
                     if (pkt_encode(tmpPtk, pkt_buffer, &size) != PKT_OK) {fprintf(stderr, "Error while encoding pkt RESEND\n"); return; } // encode pkt -> buf
                     err=send(sfd, pkt_buffer, size, MSG_CONFIRM);
-                    if (err<0) {fprintf(stderr, "Error while RESEND\n"); return; }
+                    if (err<0) {fprintf(stderr, "Error while RESEND\n"); }
                     add_packet_retransmitted(sender_logger);
                 }
                 receive_seqnum=(receive_seqnum+1)%MAX_WINDOW_SIZE;

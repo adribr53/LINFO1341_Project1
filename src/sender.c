@@ -88,7 +88,6 @@ int main(int argc, char **argv) {
 
     // Socket() & Connect()
     if (strcmp("localhost", receiver_ip)==0) {
-        fprintf(stderr, "I'am the danger, Skyler\n");
         strcpy(receiver_ip, "::1");
     }
     struct sockaddr_in6 receiver_addr;

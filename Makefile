@@ -47,6 +47,10 @@ clean: ## Remove all compilled file
 	-rm link_sim
 	-rm tests/input_file
 	-rm tests/received_file
+	-rm test_*.o
+	-rm ./tests/*.log
+	-rm ./tests/*_valg
+        
 
 # It is likely that you will need to update this
 tests: all ## Launch our tests
