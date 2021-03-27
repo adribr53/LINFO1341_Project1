@@ -76,6 +76,10 @@ int main(int argc, char **argv) {
             return EXIT_FAILURE;
         }
     }
+    FILE* stats_file = NULL;
+
+    if (stats_filename != NULL)
+        stats_file = fopen(stats_filename, "w");
 
     DEBUG("You can only see me if %s", "you built me using `make debug`");
     // ERROR("This is not an error, %s", "now let's code!");
@@ -99,7 +103,9 @@ int main(int argc, char **argv) {
         return EXIT_FAILURE;
     }
     // Loop (Selective Repeat & close when finished)
-    read_write_loop_sender(sfd, infile_fd);
+    read_write_loop_sender(sfd, infile_fd, stats_file);
 
+    if (stats_file != NULL)
+        fclose(stats_file);
     return EXIT_SUCCESS;
 }

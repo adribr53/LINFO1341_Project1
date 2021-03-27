@@ -34,18 +34,20 @@ void del_list(list_t *list) {
  * @pre : list is a pointer to a struct list
  *        waited is the waited seqnum
  *        
- * @post : the function returns 0
- *         the value is added to the struct pointed by list
- * Rem :   (if malloc fails, return -1 and does nothing else)
+ * @post : returns 0 if the value is added to the struct pointed by list
+ *         returns 1 if the pkt was already in the window
+ *         returns -1 if the malloc failed
  */
 int add(list_t *list, pkt_t *packet, uint8_t waited) {
     int index=ind(pkt_get_seqnum(packet), waited);
     if (list->window[index]!=NULL) {
-        return -1;
+        // pkt already in window
+        return 1;
     }
     pst_t *toAdd=malloc(sizeof(pst_t));
     if (toAdd==NULL) {
         fprintf(stderr, "Failed to add");
+        return -1;
     }
     toAdd->length=pkt_get_length(packet);
     memcpy(toAdd->payload, pkt_get_payload(packet), toAdd->length);

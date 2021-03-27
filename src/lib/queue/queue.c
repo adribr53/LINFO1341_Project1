@@ -80,7 +80,6 @@ int is_higher_or_equal(int seqnum, queue *list) {
     // si l'ack est plus haut, on peut supprimer l'élément actuel. Pour savoir ça, on utilise is_higher() 
     if (is_empty(list)) return 0;
     pkt_t *ref=peek(list);
-    if (ref==NULL) printf("whut\n");
     uint8_t refSeqnum=pkt_get_seqnum(ref);
     if (seqnum<refSeqnum && refSeqnum-seqnum>100) { 
         return 1; // seqnum ---------------- refSeqnum

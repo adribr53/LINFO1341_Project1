@@ -77,6 +77,11 @@ int main(int argc, char **argv) {
         return print_usage(argv[0]);
     }
 
+    FILE* stats_file = NULL;
+
+    if (stats_filename != NULL)
+        stats_file = fopen(stats_filename, "w");
+
     ASSERT(1 == 1); // Try to change it to see what happens when it fails
     DEBUG_DUMP("Some bytes", 11); // You can use it with any pointer type
 
@@ -93,7 +98,10 @@ int main(int argc, char **argv) {
         return EXIT_FAILURE;
     }
     // printf("first\n");
-    read_write_loop_server(sock, 1);
+    read_write_loop_server(sock, 1, stats_file);
+
+    if (stats_file != NULL)
+        fclose(stats_file);
 
     return EXIT_SUCCESS;
 }
