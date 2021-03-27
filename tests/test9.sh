@@ -2,7 +2,7 @@
 
 # cleanup d'un test précédent
 rm -f received_file input_file
-# Fichier au contenu aléatoire de 512 octets
+# Fichier au contenu aléatoire de 50000 octets
 dd if=/dev/urandom of=input_file bs=1 count=50000 &> /dev/null
 
 ../link_sim -p 1341 -P 2456 -R  &> link.log &

@@ -1,7 +1,3 @@
-//
-// Created by felix on 26/03/21.
-//
-
 #include "stat.h"
 
 logger* new_logger(int is_sender, FILE* fd) {

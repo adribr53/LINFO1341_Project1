@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "../src/lib/segment/packet_interface.h"
-#include "../src/lib/sortedList/sortedList.h"
+#include "../src/lib/sorted_list/sorted_list.h"
 #include <sys/time.h>
 #include <time.h>
 #include <unistd.h>

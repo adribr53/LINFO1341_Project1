@@ -1,7 +1,3 @@
-//
-// Created by felix on 26/03/21.
-//
-
 #ifndef LINFO1341_PROJECT1_STAT_H
 #define LINFO1341_PROJECT1_STAT_H
 #include <stdlib.h>

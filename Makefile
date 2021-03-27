@@ -10,8 +10,8 @@ CFLAGS += -D_COLOR
 LDFLAGS += "-lz"
 
 # Adapt these as you want to fit with your project
-SENDER_SOURCES = $(wildcard src/sender.c src/log.c src/lib/sendData/real_address.c src/lib/sendData/create_socket.c src/lib/sendData/read_write_loop_sender.c src/lib/segment/packet_implem.c src/lib/queue/queue.c src/lib/stats/stat.c)
-RECEIVER_SOURCES = $(wildcard src/receiver.c src/log.c src/lib/sendData/create_socket.c src/lib/sendData/wait_for_client.c src/lib/sendData/real_address.c src/lib/sendData/read_write_loop_server_v2.c src/lib/segment/packet_implem.c src/lib/sortedList/sortedList.c src/lib/stats/stat.c)
+SENDER_SOURCES = $(wildcard src/sender.c src/log.c src/lib/send_data/real_address.c src/lib/send_data/create_socket.c src/lib/send_data/read_write_loop_sender.c src/lib/segment/packet_implem.c src/lib/queue/queue.c src/lib/stats/stat.c)
+RECEIVER_SOURCES = $(wildcard src/receiver.c src/log.c src/lib/send_data/create_socket.c src/lib/send_data/wait_for_client.c src/lib/send_data/real_address.c src/lib/send_data/read_write_loop_server.c src/lib/segment/packet_implem.c src/lib/sorted_list/sorted_list.c src/lib/stats/stat.c)
 
 SENDER_OBJECTS = $(SENDER_SOURCES:.c=.o)
 RECEIVER_OBJECTS = $(RECEIVER_SOURCES:.c=.o)

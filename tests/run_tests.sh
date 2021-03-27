@@ -12,7 +12,7 @@ gcc -o test_queue.o ./src/lib/segment/packet_implem.c ./src/lib/queue/queue.c ./
 
 echo "Test of the sorted list (window receiver)"
 rm test_sorted_list
-gcc -o test_sorted_list.o ./src/lib/segment/packet_implem.c ./src/lib/sortedList/sortedList.c ./tests/rec_window_test.c -lcunit -lz
+gcc -o test_sorted_list.o ./src/lib/segment/packet_implem.c ./src/lib/sorted_list/sorted_list.c ./tests/rec_window_test.c -lcunit -lz
 ./test_sorted_list.o
 
 echo "Test of the program via link_sim"

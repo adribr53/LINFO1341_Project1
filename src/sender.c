@@ -11,9 +11,9 @@
 
 
 #include "log.h"
-#include "lib/sendData/create_socket.h"
-#include "lib/sendData/read_write_loop_sender.h"
-#include "lib/sendData/real_address.h"
+#include "lib/send_data/create_socket.h"
+#include "lib/send_data/read_write_loop_sender.h"
+#include "lib/send_data/real_address.h"
 
 int print_usage(char *prog_name) {
     ERROR("Usage:\n\t%s [-f filename] [-s stats_filename] receiver_ip receiver_port", prog_name);
@@ -104,6 +104,8 @@ int main(int argc, char **argv) {
     // Loop (Selective Repeat & close when finished)
     read_write_loop_sender(sfd, infile_fd, stats_file);
 
+    close(sfd);
+    if (infile_fd!=0) close(infile_fd);
     if (stats_file != NULL)
         fclose(stats_file);
     return EXIT_SUCCESS;

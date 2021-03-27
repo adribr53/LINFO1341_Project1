@@ -5,12 +5,12 @@
 #include <string.h>
 
 #include "log.h"
-#include "./lib/sendData/real_address.h"
-#include "./lib/sendData/create_socket.h"
-#include "./lib/sendData/wait_for_client.h"
-#include "./lib/sendData/read_write_loop_server_v2.h"
+#include "./lib/send_data/real_address.h"
+#include "./lib/send_data/create_socket.h"
+#include "./lib/send_data/wait_for_client.h"
+#include "./lib/send_data/read_write_loop_server.h"
 
-int sock;
+int sfd;
 
 int print_usage(char *prog_name) {
     ERROR("Usage:\n\t%s [-s stats_filename] listen_ip listen_port", prog_name);
@@ -26,13 +26,13 @@ int connection_to_sender(char* listen_ip, uint16_t listen_port) {
         return 1;
     }
 
-    sock = create_socket(&addressSock, listen_port, NULL, -1);
-    if (sock < 0) {
+    sfd = create_socket(&addressSock, listen_port, NULL, -1);
+    if (sfd < 0) {
         fprintf(stderr, "Error during the execution of create_socket()");
         return 1;
     }
 
-    if (wait_for_client(sock)==-1) {
+    if (wait_for_client(sfd)==-1) {
         fprintf(stderr, "Error during the execution of wait_for_client()");
         return 1;
     }
@@ -98,8 +98,8 @@ int main(int argc, char **argv) {
         return EXIT_FAILURE;
     }
     // printf("first\n");
-    read_write_loop_server(sock, 1, stats_file);
-
+    read_write_loop_server(sfd, 1, stats_file);
+    close(sfd);
     if (stats_file != NULL)
         fclose(stats_file);
 
