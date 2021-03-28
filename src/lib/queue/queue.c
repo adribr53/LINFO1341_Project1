@@ -18,6 +18,9 @@ queue *new_list() {
     toR->size=0;
     toR->ptrAdd=0;
     toR->ptrPop=0;
+    for (int i=0; i<MAX_WINDOW_SIZE; i++) {
+        toR->window[i]=NULL;
+    }
     return toR;
 }
 

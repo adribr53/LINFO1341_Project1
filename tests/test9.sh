@@ -9,7 +9,7 @@ dd if=/dev/urandom of=input_file bs=1 count=50000 &> /dev/null
 link_pid=$!
 
 # On lance le receiver et capture sa sortie standard
-valgrind --log-file=r_valg ../receiver :: 2456 1>received_file 2> recv.log &
+valgrind -s --track-origins=yes --log-file=r_valg ../receiver :: 2456 1>received_file 2> recv.log &
 receiver_pid=$!
 
 cleanup()
@@ -21,7 +21,7 @@ cleanup()
 trap cleanup SIGINT  # Kill les process en arrière plan en cas de ^-C
 
 # On démarre le transfert
-if ! valgrind --log-file=s_valg ../sender -f input_file ::1 1341 2>send.log ; then
+if ! valgrind -s --track-origins=yes --log-file=s_valg ../sender -f input_file ::1 1341 2>send.log ; then
   echo "Crash du sender!" 
   cat send.log
   err=1  # On enregistre l'erreur
