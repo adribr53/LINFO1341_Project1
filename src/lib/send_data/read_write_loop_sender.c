@@ -78,14 +78,13 @@ void read_write_loop_sender(const int sfd, const int input_fd, FILE* stats_file)
     char pkt_buffer[MAX_PAYLOAD_SIZE+16];
     int nb = 0; // variable utilisée avec write()/read()
     int err;
-    int sentPkt = 0; // booleen
 
     uint32_t TIMEOUT = 1200;
     uint8_t seqnum = 0;
     uint8_t pktInWindow = 0;
 
     queue* window = new_list();
-    uint8_t sendingWindowSize = 1; // devrait être 1
+    uint8_t sendingWindowSize = 1; 
 
     pkt_t *socketPkt;
     pkt_t *tmpPtk;
@@ -136,7 +135,6 @@ void read_write_loop_sender(const int sfd, const int input_fd, FILE* stats_file)
                     // Update variables
                     pktInWindow++;
                     seqnum=(seqnum+1)%256; // prochain numero de sequence
-                    sentPkt=1;
                 }
             }
         }
@@ -191,7 +189,7 @@ void read_write_loop_sender(const int sfd, const int input_fd, FILE* stats_file)
                                 fprintf(stderr, "Paket N°%d has been resent (NACK   )\n", pkt_get_seqnum(tmpPtk));
 
                                 err=send(sfd, pkt_buffer, size, MSG_CONFIRM);
-                                if (err<0) {fprintf(stderr, "Error while resinding pkt NACK\n"); return; }
+                                if (err<0) {fprintf(stderr, "Error while resinding pkt NACK\n"); }
                                 add_packet_retransmitted(sender_logger);
 
                                 sendingWindowSize = sendingWindowSize == 1 ? 1 : sendingWindowSize/2; // Resize sending window
@@ -254,7 +252,6 @@ void read_write_loop_sender(const int sfd, const int input_fd, FILE* stats_file)
             add_data_sent(sender_logger);
 
             fprintf(stderr, "sender terminates\n");
-            fprintf(stderr, "ALL PKT SENT (%d)\n", sentPkt);
             // Free struc
             del_list(window);
             if (socketPkt != NULL) pkt_del(socketPkt);
