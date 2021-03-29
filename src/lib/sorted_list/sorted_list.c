@@ -44,7 +44,7 @@ int add(list_t *list, pkt_t *packet, uint8_t waited) {
         // pkt already in window
         return 1;
     }
-    pst_t *toAdd=malloc(sizeof(pst_t));
+    pstl_t *toAdd=malloc(sizeof(pstl_t));
     if (toAdd==NULL) {
         fprintf(stderr, "Failed to add");
         return -1;
@@ -64,7 +64,7 @@ int add(list_t *list, pkt_t *packet, uint8_t waited) {
  *
  * @post : return the first elem
  */
-pst_t *peek(list_t* list) {
+pstl_t *peek(list_t* list) {
     if (list->size==0) {
         return NULL;
     }
