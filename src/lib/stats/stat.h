@@ -1,3 +1,5 @@
+// Code to compute the stats
+
 #ifndef LINFO1341_PROJECT1_STAT_H
 #define LINFO1341_PROJECT1_STAT_H
 #include <stdlib.h>
